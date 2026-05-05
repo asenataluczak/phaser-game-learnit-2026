@@ -234,3 +234,13 @@ I teraz żeby z powstałego projektu zrobić repo na GitHubie:
   ]
 }
 ```
+
+Wyjaśnienie z dokumentacji VS Code: https://code.visualstudio.com/docs/languages/jsconfig
+
+## 4. Phaser concepts
+
+https://docs.phaser.io/
+
+- main config
+- scenes
+- game loop
