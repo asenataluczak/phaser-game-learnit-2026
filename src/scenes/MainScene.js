@@ -3,9 +3,9 @@ import { Player } from "../gameobjects/Player";
 import { BlueEnemy } from "../gameobjects/BlueEnemy";
 
 export class MainScene extends Scene {
-    player = null;
-    enemy_blue = null;
-    cursors = null;
+    player;
+    enemy_blue;
+    cursors;
 
     points = 0;
     game_over_timeout = 20;
@@ -83,7 +83,7 @@ export class MainScene extends Scene {
                         this.scene.start("GameOverScene", { points: this.points });
                     } else {
                         this.game_over_timeout--;
-                        this.scene.get("HudScene").update_timeout(this.game_over_timeout);
+                        this.scene.get("HudScene");
                     }
                 }
             });
