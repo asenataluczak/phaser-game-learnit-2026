@@ -213,29 +213,6 @@ I teraz żeby z powstałego projektu zrobić repo na GitHubie:
     git remote add origin <link-do-repo>
     git push origin main
     ```
-   
-### 3.3 `jsconfig.json`
-
-Żeby VS Code podpowiadał metody i properties z Phasera, do folderu projektu trzeba dodać plik `jsconfig.json` o poniższej zawartości:
-
-```
-{
-  "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "noImplicitAny": false,
-    "strictPropertyInitialization": false,
-  },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
-}
-```
-
-Wyjaśnienie z dokumentacji VS Code: https://code.visualstudio.com/docs/languages/jsconfig
 
 ## 4. Phaser concepts
 
@@ -244,3 +221,8 @@ https://docs.phaser.io/
 - main config
 - scenes
 - game loop
+
+## 5. Pomysly na gre:
+
+- bomberman
+- soccer caps
