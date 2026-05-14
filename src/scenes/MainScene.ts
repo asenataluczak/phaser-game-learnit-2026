@@ -2,7 +2,7 @@ import { Scene } from "phaser";
 
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
-    playerBody!: Phaser.Physics.Arcade.Body;
+    playerBody: Phaser.Physics.Arcade.Body;
 
     constructor() {
         super("MainScene");
