@@ -7,15 +7,11 @@ import * as Phaser from 'phaser';
 const config = {
     type: Phaser.AUTO,
     parent: "phaser-container",
-    width: 960,
-    height: 540,
-    backgroundColor: "#1c172e",
+    width: 1280,
+    height: 720,
+    backgroundColor: "#085000",
     pixelArt: true,
     roundPixel: false,
-    max: {
-        width: 800,
-        height: 600,
-    },
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
@@ -23,7 +19,7 @@ const config = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 1000, x: 0 },
+            gravity: { y: 0, x: 0 },
             debug: true
         }
     },

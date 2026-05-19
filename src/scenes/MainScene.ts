@@ -13,7 +13,7 @@ export class MainScene extends Scene {
     }
 
     create() {
-        this.add.image(0, 0, "background").setOrigin(0, 0);
+        this.add.image(0, 0, "field").setOrigin(0, 0);
 
         this.player = new Player(this);
         this.ball = new Ball(this);

@@ -10,9 +10,9 @@ export class Player extends Phaser.Physics.Arcade.Image {
         this.scene.physics.add.existing(this);
 
         this.setCollideWorldBounds();
-        this.setScale(2);
-        this.setCircle(16);
-        this.setMass(0.5);
+        this.setDisplaySize(100, 100);
+        this.setCircle(145);
+        this.setMass(2);
         this.setBounce(0.6);
     }
 
