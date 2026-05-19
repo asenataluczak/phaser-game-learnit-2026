@@ -1,10 +1,12 @@
 import { Scene } from "phaser";
 import { Player } from "../gameobjects/Player";
+import { Ball } from "../gameobjects/Ball";
 
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
 
     player: Player;
+    ball: Ball;
 
     constructor() {
         super("MainScene");
@@ -14,18 +16,9 @@ export class MainScene extends Scene {
         this.add.image(0, 0, "background").setOrigin(0, 0);
 
         this.player = new Player(this);
+        this.ball = new Ball(this);
 
-        const ballBody = this.physics.add
-            .sprite(500, 300, "player")
-            .setScale(1.5, 1.5);
-
-        ballBody.setCollideWorldBounds();
-        ballBody.tint = 0x00ff00;
-        ballBody.setCircle(16);
-        ballBody.setBounce(0.8, 0.8);
-        ballBody.setMass(2);
-
-        this.physics.add.collider(ballBody, this.player);
+        this.physics.add.collider(this.ball, this.player);
 
         this.keyObjects = this.input.keyboard!.addKeys({
             up: "W",
