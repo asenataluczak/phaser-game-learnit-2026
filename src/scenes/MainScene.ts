@@ -29,6 +29,17 @@ export class MainScene extends Scene {
     }
 
     update() {
+        if (this.player.isLoadingKick) {
+            this.player.loadKick(
+                this.input.activePointer.x,
+                this.input.activePointer.y,
+            );
+        }
+
+        if (this.player.isLoadingKick && !this.input.activePointer.isDown) {
+            this.player.kick();
+        }
+
         if (this.keyObjects.up.isDown) {
             this.player.move("up");
         }
