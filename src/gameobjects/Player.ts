@@ -6,6 +6,9 @@ export class Player extends Phaser.Physics.Arcade.Image {
     debugGfx: GameObjects.Graphics;
 
     isLoadingKick: boolean = false;
+    distance: number;
+    dx: number;
+    dy: number;
 
     constructor(scene: Phaser.Scene) {
         super(scene, 400, 200, "player");
@@ -20,6 +23,8 @@ export class Player extends Phaser.Physics.Arcade.Image {
         this.setMass(2);
         this.setBounce(0.6);
         this.setInteractive();
+        this.setDamping(true);
+        this.setDrag(0.4);
 
         this.listenForLoadingKick();
     }
@@ -31,30 +36,54 @@ export class Player extends Phaser.Physics.Arcade.Image {
         let targetX = 2 * px - mx;
         let targetY = 2 * py - my;
 
-        const dx = targetX - px;
-        const dy = targetY - py;
+        this.dx = targetX - px;
+        this.dy = targetY - py;
 
-        const vectorToTarget = new Phaser.Math.Vector2(dx, dy);
+        const vectorToTarget = new Phaser.Math.Vector2(this.dx, this.dy);
         if (vectorToTarget.length() > 200) {
             vectorToTarget.setLength(200);
             targetX = vectorToTarget.x + px;
             targetY = vectorToTarget.y + py;
         }
 
+        const vectorToBorder = vectorToTarget.clone().setLength(56);
+        const borderX = px + vectorToBorder.x;
+        const borderY = py + vectorToBorder.y;
+
+        this.distance = Phaser.Math.Distance.Between(mx, my, px, py);
+        if (this.body.hitTest(targetX, targetY)) {
+            this.distance = 0;
+        }
+
         this.debugGfx.clear();
         this.debugGfx.fillStyle(0xff0000, 1);
         this.debugGfx.fillCircle(mx, my, 5);
-        this.debugGfx.fillStyle(0x0000ff, 1);
+        this.debugGfx.fillCircle(borderX, borderY, 5);
+        this.debugGfx.fillStyle(0xffff00, 1);
         this.debugGfx.fillCircle(px, py, 5);
-        this.debugGfx.fillStyle(0x0000ff, 1);
+        this.debugGfx.fillStyle(0xff0f00, 1);
         this.debugGfx.fillCircle(targetX, targetY, 5);
         this.debugGfx.lineStyle(2, 0x0000ff, 1);
-        this.debugGfx.lineBetween(targetX, targetY, px, py);
+        this.debugGfx.lineBetween(borderX, borderY, targetX, targetY);
     }
 
     kick() {
         this.debugGfx.clear();
         this.isLoadingKick = false;
+
+        if (!this.distance) {
+            return;
+        }
+        const k = 2;
+        let speed = this.distance * k;
+
+        speed = Phaser.Math.Clamp(speed, 100, 600);
+
+        const rawVelocity = new Phaser.Math.Vector2(
+            this.dx,
+            this.dy,
+        ).normalize();
+        this.body.setVelocity(rawVelocity.x * speed, rawVelocity.y * speed);
     }
 
     move(direction: "up" | "down" | "left" | "right") {
