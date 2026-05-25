@@ -1,7 +1,8 @@
 import { Game } from "phaser";
 import { Preloader } from "./preloader";
 import { MainScene } from "./scenes/MainScene";
-import * as Phaser from 'phaser';
+import * as Phaser from "phaser";
+import { HudScene } from "./scenes/HudScene";
 
 // More information about config: https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config = {
@@ -14,19 +15,16 @@ const config = {
     roundPixel: false,
     scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
         default: "arcade",
         arcade: {
             gravity: { y: 0, x: 0 },
-            debug: true
-        }
+            debug: true,
+        },
     },
-    scene: [
-        Preloader,
-        MainScene,
-    ]
+    scene: [Preloader, MainScene, HudScene],
 };
 
 new Game(config);

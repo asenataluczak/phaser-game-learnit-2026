@@ -14,5 +14,22 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         this.setCircle(255);
         this.setBounce(0.8, 0.8);
         this.setMass(0.5);
+        this.setDamping(true);
+        this.setDrag(0.7);
+    }
+
+    move(direction: "up" | "down" | "left" | "right") {
+        if (direction === "up") {
+            this.body.setVelocityY(-600);
+        }
+        if (direction === "down") {
+            this.body.setVelocityY(600);
+        }
+        if (direction === "left") {
+            this.body.setVelocityX(-600);
+        }
+        if (direction === "right") {
+            this.body.setVelocityX(600);
+        }
     }
 }
