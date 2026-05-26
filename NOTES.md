@@ -222,7 +222,6 @@ https://docs.phaser.io/
 - scenes
 - game loop
 
-## 5. Pomysly na gre:
+## 5. BACKLOG
 
-- bomberman
-- soccer caps
+- handlowanie sytuacji kiedy czas sie skonczyl ale pilka jest w ruchu (np. decydujaca bramka)

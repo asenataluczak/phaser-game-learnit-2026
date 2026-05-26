@@ -12,7 +12,7 @@ export class MainScene extends Scene {
     scoreA: number = 0;
     scoreB: number = 0;
     canScoreIncrease: boolean = true;
-    gameOverTimeoutInSeconds: number = 10;
+    gameOverTimeoutInSeconds: number = 180;
 
     hudScene: HudScene;
 
