@@ -1,0 +1,44 @@
+<div id="menu" class="menu flex">
+    <h1 class="text-[60px] font-bold uppercase">
+        <span>Game</span>
+    </h1>
+
+    <div class="min-w-[400px]">
+        <input
+            #name
+            id="playerNameInput"
+            type="text"
+            class="mb-8 rounded-lg"
+            placeholder="your name"
+        />
+
+        <button
+            id="createBtn"
+            class="btn btn-primary w-full"
+            type="button"
+            (click)="connect(name.value)"
+        >
+            create
+        </button>
+
+        <p class="text-center text-xl my-2">or</p>
+
+        <div class="flex">
+            <input
+                #gameId
+                class="rounded-l-lg"
+                id="gameIdInput"
+                type="text"
+                name="gameId"
+                placeholder="game ID"
+            />
+            <button
+                class="btn btn-secondary rounded-r-lg"
+                type="button"
+                (click)="connect(name.value, gameId.value)"
+            >
+                join
+            </button>
+        </div>
+    </div>
+</div>
