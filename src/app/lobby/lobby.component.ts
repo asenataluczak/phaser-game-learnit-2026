@@ -20,6 +20,6 @@ export class Lobby {
     );
 
     startGame() {
-        this.router.navigate(['/game', this.lobbyStore.gameId()]);
+        this.lobbyStore.startGame();
     }
 }

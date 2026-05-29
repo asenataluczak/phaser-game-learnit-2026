@@ -57,22 +57,20 @@ export const LobbyStore = signalStore(
             });
             socket.connect(name, gameId || '', newUserId);
         },
+        startGame() {
+            socket.emitStartGame(store.gameId() || '');
+        },
     })),
     withHooks(
         (store, router = inject(Router), socket = inject(SocketService)) => ({
             onInit() {
                 socket.playersInLobbyChange$.subscribe((players) => {
+                    console.log(players);
                     const currentUser = players.find(
                         (p: Player) => p.id === store.user()?.id,
                     );
 
                     if (!currentUser) {
-                        console.log(
-                            'navigated by playersInLobyChange',
-                            currentUser,
-                            players,
-                            store.user(),
-                        );
                         router.navigateByUrl('/');
                         return;
                     }
@@ -80,6 +78,13 @@ export const LobbyStore = signalStore(
                     patchState(store, {
                         playersInLobby: players,
                     });
+
+                    const allPlayersHavePosition = players.every(
+                        (p: Player) => p.position?.x && p.position?.y,
+                    );
+                    if (allPlayersHavePosition) {
+                        router.navigate(['/game', store.gameId()]);
+                    }
                 });
 
                 socket.gameIdChange$.subscribe((gameId) => {
@@ -88,6 +93,8 @@ export const LobbyStore = signalStore(
                         gameId,
                     });
                     if (gameId === 'undefined') return;
+                    if (gameId && window.location.href.includes('/game/'))
+                        return;
                     if (gameId && !window.location.href.includes('/lobby/')) {
                         router.navigate([`/lobby/${gameId}`]);
                     }
@@ -100,8 +107,8 @@ export const LobbyStore = signalStore(
                             'id'
                         ];
 
-                        if (!gameId) return;
                         console.log('Route change, gameId:', gameId);
+                        if (!gameId) return;
                         const userId = localStorage.getItem('USER_ID');
                         const username = localStorage.getItem('USER_NAME');
 
@@ -122,7 +129,6 @@ export const LobbyStore = signalStore(
                             },
                         });
                         console.log(store.user());
-
                         socket.connect(username || '', gameId, userId || '');
                     });
             },

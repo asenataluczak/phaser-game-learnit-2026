@@ -6,4 +6,8 @@ export interface User {
 export interface Player extends User {
     team: number;
     host: boolean;
+    position?: {
+        x: number;
+        y: number;
+    };
 }

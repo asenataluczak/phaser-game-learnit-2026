@@ -35,5 +35,13 @@ export class SocketService {
             this.playersInLobbyChange$.next(res.users);
             this.gameIdChange$.next(res.gameId);
         });
+
+        this.socket.on('GAME_STARTED', (res) => {
+            this.playersInLobbyChange$.next(res.users);
+        });
+    }
+
+    emitStartGame(gameId: string) {
+        this.socket.emit('START_GAME', { gameId });
     }
 }

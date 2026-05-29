@@ -7,6 +7,16 @@ const io = new Server({
     },
 });
 
+const INITIAL_POSITIONS_TEAM_A = [
+    { x: 100, y: 100 },
+    { x: 200, y: 200 },
+];
+
+const INITIAL_POSITIONS_TEAM_B = [
+    { x: 500, y: 300 },
+    { x: 600, y: 300 },
+];
+
 let allConnectedUsers = [];
 const getUsersInTheRoom = (gameId) => {
     const allUsersInTheRoom = allConnectedUsers.filter(
@@ -21,6 +31,7 @@ const getUsersInTheRoom = (gameId) => {
     return allUsersInTheRoomMapped;
 };
 
+const lobbies = {};
 io.on("connection", (socket) => {
     const { username, userId, gameId: _gameId } = socket.handshake.query;
 
@@ -31,17 +42,12 @@ io.on("connection", (socket) => {
     }
 
     const gameId = _gameId || nanoid(6);
-    console.log("GAME ID", _gameId, gameId);
 
     socket.join(gameId);
 
-    const currentUserIndex = allConnectedUsers.findIndex(
-        (user) => {
-            console.log("CHECKING USER ID", user.id, userId);
-            return user.id === userId
-        },
-    );
-    console.log("CURRENT USER INDEX", currentUserIndex);
+    const currentUserIndex = allConnectedUsers.findIndex((user) => {
+        return user.id === userId;
+    });
     if (currentUserIndex < 0) {
         const team = getCalculatedTeam(gameId);
         allConnectedUsers.push({
@@ -52,13 +58,36 @@ io.on("connection", (socket) => {
             host: !getUsersInTheRoom(gameId).length,
         });
     }
-    console.log("ALL CONNECTED USERS", allConnectedUsers);
 
-    console.log("EMIT", gameId);
-    console.log("USERS IN THE ROOM", getUsersInTheRoom(gameId));
     io.sockets.to(gameId).emit("USERS_IN_LOBBY_CHANGE", {
         users: getUsersInTheRoom(gameId),
         gameId: gameId,
+    });
+
+    socket.on("START_GAME", ({ gameId }) => {
+        if (!gameId) return;
+        const usersInTheRoom = getUsersInTheRoom(gameId);
+        const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
+        const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
+        const playersWithPositions = [
+            ...playersTeamA.map((p, i) => ({
+                ...p,
+                position: {
+                    ...INITIAL_POSITIONS_TEAM_A[i],
+                },
+            })),
+            ...playersTeamB.map((p, i) => ({
+                ...p,
+                position: {
+                    ...INITIAL_POSITIONS_TEAM_B[i],
+                },
+            })),
+        ];
+        lobbies[gameId] = { players: playersWithPositions };
+        io.sockets.to(gameId).emit("GAME_STARTED", {
+            users: playersWithPositions,
+            gameId: gameId,
+        });
     });
 
     socket.on("disconnect", (reason) => {

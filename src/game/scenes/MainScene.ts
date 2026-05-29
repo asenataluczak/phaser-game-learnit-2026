@@ -1,7 +1,7 @@
-import { Scene } from "phaser";
-import { Player } from "../gameobjects/Player";
-import { Ball } from "../gameobjects/Ball";
-import { HudScene } from "./HudScene";
+import { Scene } from 'phaser';
+import { Player } from '../gameobjects/Player';
+import { Ball } from '../gameobjects/Ball';
+import { HudScene } from './HudScene';
 
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
@@ -14,32 +14,54 @@ export class MainScene extends Scene {
     canScoreIncrease: boolean = true;
     gameOverTimeoutInSeconds: number = 180;
 
+    allPlayers: Array<any> = [];
+    currentUserId: string;
+
     hudScene: HudScene;
 
     constructor() {
-        super("MainScene");
+        super('MainScene');
     }
 
     create() {
-        this.add.image(0, 0, "field").setOrigin(0, 0);
+        this.add.image(0, 0, 'field').setOrigin(0, 0);
+        this.scene.pause();
+
+        this.ball = new Ball(this);
+
+        this.currentUserId = this.game.registry.get('currentUserId') as string;
+        this.allPlayers = this.game.registry.get('players') as Array<any>;
+
+        this.allPlayers.forEach((player) => {
+            const isCurrentUser = player.id === this.currentUserId;
+            const playerSprite = new Player(
+                this,
+                player.position.x,
+                player.position.y,
+                isCurrentUser,
+                player.team,
+            );
+            if (isCurrentUser) {
+                this.player = playerSprite;
+            }
+
+            this.physics.add.collider(playerSprite, this.ball);
+        });
+        this.scene.resume();
 
         const goalA = this.physics.add
-            .staticImage(16, 268, "goal")
+            .staticImage(16, 268, 'goal')
             .setOrigin(0, 0)
             .setDisplaySize(56, 240)
             .setVisible(false);
         goalA.refreshBody();
         const goalB = this.physics.add
-            .staticImage(1207, 268, "goal")
+            .staticImage(1207, 268, 'goal')
             .setOrigin(0, 0)
             .setDisplaySize(56, 240)
             .setVisible(false);
         goalB.refreshBody();
 
-        this.player = new Player(this);
-        this.ball = new Ball(this);
-
-        this.physics.add.collider(this.ball, this.player);
         this.physics.add.overlap(this.ball, goalA, () => {
             if (!this.canScoreIncrease) return;
             this.scoreA++;
@@ -56,20 +78,20 @@ export class MainScene extends Scene {
         });
 
         this.keyObjects = this.input.keyboard!.addKeys({
-            up: "W",
-            down: "S",
-            left: "A",
-            right: "D",
+            up: 'W',
+            down: 'S',
+            left: 'A',
+            right: 'D',
         }) as Record<string, Phaser.Input.Keyboard.Key>;
 
-        this.scene.launch("HudScene");
-        this.hudScene = this.scene.get("HudScene") as HudScene;
+        this.scene.launch('HudScene');
+        this.hudScene = this.scene.get('HudScene') as HudScene;
         this.time.addEvent({
             delay: 1000,
             loop: true,
             callback: () => {
                 if (this.gameOverTimeoutInSeconds === 0) {
-                    this.game.events.removeListener("start-game");
+                    this.game.events.removeListener('start-game');
 
                     // TODO: implement game over logic
                     console.log(`Score: ${this.scoreA} : ${this.scoreB}`);
@@ -97,16 +119,16 @@ export class MainScene extends Scene {
         }
 
         if (this.keyObjects['up'].isDown) {
-            this.ball.move("up");
+            this.ball.move('up');
         }
         if (this.keyObjects['down'].isDown) {
-            this.ball.move("down");
+            this.ball.move('down');
         }
         if (this.keyObjects['left'].isDown) {
-            this.ball.move("left");
+            this.ball.move('left');
         }
         if (this.keyObjects['right'].isDown) {
-            this.ball.move("right");
+            this.ball.move('right');
         }
     }
 

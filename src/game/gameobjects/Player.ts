@@ -11,12 +11,22 @@ export class Player extends Physics.Arcade.Image {
     dx: number;
     dy: number;
 
-    constructor(scene: Phaser.Scene) {
-        super(scene, 400, 200, 'player');
+    constructor(
+        scene: Phaser.Scene,
+        x: number,
+        y: number,
+        isCurrentUser: boolean,
+        team: 1 | 2,
+    ) {
+        super(scene, x, y, 'player');
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.debugGfx = this.scene.add.graphics();
+
+        if (isCurrentUser) {
+            this.setTint(0x0088aa);
+        }
 
         this.setCollideWorldBounds();
         this.setDisplaySize(100, 100);
