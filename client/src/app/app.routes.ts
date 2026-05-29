@@ -13,7 +13,7 @@ export const routes: Routes = [
         component: Lobby,
     },
     {
-        path: 'game/:id',
+        path: 'game/:gameId',
         component: PhaserGame,
     },
 ];

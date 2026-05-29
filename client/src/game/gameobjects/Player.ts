@@ -29,7 +29,7 @@ export class Player extends Physics.Arcade.Image {
         }
 
         this.setCollideWorldBounds();
-        this.setDisplaySize(100, 100);
+        // this.setDisplaySize(100, 100);
         this.setCircle(145);
         this.setMass(2);
         this.setBounce(0.6);
@@ -94,7 +94,15 @@ export class Player extends Physics.Arcade.Image {
             this.dx,
             this.dy,
         ).normalize();
-        this.body.setVelocity(rawVelocity.x * speed, rawVelocity.y * speed);
+
+        const dirX = rawVelocity.x * speed;
+        const dirY = rawVelocity.y * speed;
+        // this.body.setVelocity(dirX, dirY);
+
+        return {
+            type: 'kick',
+            dir: { x: dirX, y: dirY },
+        };
     }
 
     move(direction: 'up' | 'down' | 'left' | 'right') {

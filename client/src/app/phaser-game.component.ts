@@ -18,14 +18,18 @@ export class PhaserGame implements OnInit {
     constructor() {
         effect(() => {
             const players = this.lobbyStore.playersInLobby();
-            const user = this.lobbyStore.user();
-            const allPlayersWithPosition = players.every((p) => p.position?.x);
-            console.log(players, user, allPlayersWithPosition);
-            if (user && players.length && allPlayersWithPosition) {
+            const currentUserIndex = this.lobbyStore
+                .initialGameData()
+                .players.findIndex(
+                    (p: any) => p.id === this.lobbyStore.user()?.id,
+                );
+            const initialGameData = this.lobbyStore.initialGameData();
+            console.log(players, currentUserIndex, initialGameData);
+            if (currentUserIndex >= 0 && players.length && initialGameData) {
                 this.game = StartGame(
                     'game-container',
                     this.lobbyStore.playersInLobby(),
-                    this.lobbyStore.user()!.id,
+                    currentUserIndex,
                     this.lobbyStore.initialGameData(),
                 );
             }

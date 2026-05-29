@@ -76,6 +76,11 @@ export const LobbyStore = signalStore(
                     );
 
                     if (!currentUser) {
+                        console.log(
+                            'Current user not found in lobby, navigating to main menu',
+                            currentUser,
+                            players,
+                        );
                         router.navigateByUrl('/');
                         return;
                     }
@@ -83,13 +88,6 @@ export const LobbyStore = signalStore(
                     patchState(store, {
                         playersInLobby: players,
                     });
-
-                    const allPlayersHavePosition = players.every(
-                        (p: Player) => p.position?.x && p.position?.y,
-                    );
-                    if (allPlayersHavePosition) {
-                        router.navigate(['/game', store.gameId()]);
-                    }
                 });
 
                 socket.gameIdChange$.subscribe((gameId) => {
@@ -105,10 +103,11 @@ export const LobbyStore = signalStore(
                     }
                 });
 
-                socket.gameInitialDataChange$.subscribe((data) => {
-                    console.log('Game initial data received in store', data);
+                socket.gameInitialDataChange$.subscribe((snapshot) => {
+                    router.navigate(['/game', store.gameId()]);
+
                     patchState(store, {
-                        initialGameData: data,
+                        initialGameData: snapshot,
                     });
                 });
 

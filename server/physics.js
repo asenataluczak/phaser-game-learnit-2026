@@ -4,29 +4,30 @@ const config = {
   width: 1280,
   height: 720,
   fps: 60, // Number of physics steps per second
-  fixedStep: true, // Enforces the fixed timestep
+  // fixedStep: true, // Enforces the fixed timestep
   timeScale: 1,
   gravity: {
     x: 0,
-    y: 1000,
+    y: 0,
   },
 };
 
 const physics = new ArcadePhysics(config);
+physics.world.setBounds(0, 56, 1280, 664);
 
-// ball
-const ball = physics.add.body(206, 20);
-ball.setCircle(32);
-ball.setBounce(0.8);
-ball.setCollideWorldBounds(true);
-
+let ballSprite;
 const createBall = () => {
-  const ball = physics.add.body(306, 20);
-  ball.setCircle(32);
-  ball.setBounce(0.8);
-  ball.setCollideWorldBounds(true);
+  const ball = physics.add.body(640, 332);
+  ball.setCollideWorldBounds();
+  ball.setCircle(60);
+  ball.setBounce(0.8, 0.8);
+  ball.setMass(0.5);
+  ball.setDamping(true);
+  ball.setDrag(0.7);
+  ballSprite = ball;
   return ball;
 };
+// set colliders on ball
 
 const getBallPosition = (ball) => {
   return {
@@ -35,4 +36,35 @@ const getBallPosition = (ball) => {
   };
 };
 
-export { physics, createBall, getBallPosition };
+const playersPositions = {};
+const createPlayerSprite = (x, y) => {
+  const body = physics.add.body(x, y);
+  body.setCollideWorldBounds();
+  body.setCircle(70);
+  body.setMass(2);
+  body.setBounce(0.6);
+  body.setDamping(true);
+  body.setDrag(0.4);
+  physics.add.collider(ballSprite, body);
+
+  return body;
+};
+// set colliders on players
+
+const getPlayersPositions = (players) => {
+  return [...players].map((player) => ({
+    ...player,
+    position: {
+      x: playersPositions[player.id]?.x,
+      y: playersPositions[player.id]?.y,
+    },
+  }));
+};
+
+export {
+  physics,
+  createBall,
+  getBallPosition,
+  createPlayerSprite,
+  getPlayersPositions,
+};

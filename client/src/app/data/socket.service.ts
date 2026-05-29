@@ -41,11 +41,8 @@ export class SocketService {
             this.gameIdChange$.next(res.gameId);
         });
 
-        this.socket.on('GAME_STARTED', (res) => {
-            this.playersInLobbyChange$.next(res.users);
-            this.gameInitialDataChange$.next({
-                ballPosition: res.ballPosition,
-            });
+        this.socket.on('GAME_STARTED', (snapshot) => {
+            this.gameInitialDataChange$.next(snapshot);
         });
     }
 
