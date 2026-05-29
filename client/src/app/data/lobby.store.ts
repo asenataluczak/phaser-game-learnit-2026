@@ -6,7 +6,7 @@ import {
     withMethods,
     withState,
 } from '@ngrx/signals';
-import { inject } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import { withDevtools } from '@angular-architects/ngrx-toolkit';
 import { ActivationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -19,6 +19,7 @@ interface LobbyState {
     user: User | null;
     player: Player | null;
     playersInLobby: Array<Player>;
+    initialGameData: any;
 }
 
 const initialState: LobbyState = {
@@ -26,6 +27,7 @@ const initialState: LobbyState = {
     user: null,
     player: null,
     playersInLobby: [],
+    initialGameData: null,
 };
 
 export const LobbyStore = signalStore(
@@ -33,11 +35,12 @@ export const LobbyStore = signalStore(
     withState<LobbyState>(initialState),
     withDevtools('lobby'),
     withComputed((store) => ({
-        isHost: () => store.player()?.host,
-        player: () =>
+        isHost: computed(() => store.player()?.host),
+        player: computed(() =>
             store
                 .playersInLobby()
                 .find((p: Player) => p.id === store.user()?.id),
+        ),
     })),
     withMethods((store, socket = inject(SocketService)) => ({
         connectNewUser(name: string, gameId?: string) {
@@ -55,6 +58,8 @@ export const LobbyStore = signalStore(
                     name,
                 },
             });
+
+            if (socket.socket?.connected) return;
             socket.connect(name, gameId || '', newUserId);
         },
         startGame() {
@@ -100,6 +105,13 @@ export const LobbyStore = signalStore(
                     }
                 });
 
+                socket.gameInitialDataChange$.subscribe((data) => {
+                    console.log('Game initial data received in store', data);
+                    patchState(store, {
+                        initialGameData: data,
+                    });
+                });
+
                 router.events
                     .pipe(filter((event) => event instanceof ActivationEnd))
                     .subscribe((route) => {
@@ -128,7 +140,6 @@ export const LobbyStore = signalStore(
                                 name: username,
                             },
                         });
-                        console.log(store.user());
                         socket.connect(username || '', gameId, userId || '');
                     });
             },

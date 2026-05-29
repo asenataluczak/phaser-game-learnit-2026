@@ -32,11 +32,13 @@ const StartGame = (
     parent: string,
     players: Array<Player>,
     currentUserId: string,
+    initialGameData: any,
 ) => {
     const game = new Game({ ...config, parent });
     console.log(players, currentUserId);
     game.registry.set('currentUserId', currentUserId);
     game.registry.set('players', players);
+    game.registry.set('initialGameData', initialGameData);
     return game;
 };
 

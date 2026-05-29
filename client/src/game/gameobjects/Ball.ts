@@ -1,10 +1,10 @@
-import { Physics } from "phaser";
+import { Physics } from 'phaser';
 
 export class Ball extends Physics.Arcade.Image {
     declare body: Physics.Arcade.Body;
 
-    constructor(scene: Phaser.Scene) {
-        super(scene, 500, 300, "ball");
+    constructor(scene: Phaser.Scene, x: number, y: number) {
+        super(scene, x, y, 'ball');
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
@@ -18,17 +18,17 @@ export class Ball extends Physics.Arcade.Image {
         this.setDrag(0.7);
     }
 
-    move(direction: "up" | "down" | "left" | "right") {
-        if (direction === "up") {
+    move(direction: 'up' | 'down' | 'left' | 'right') {
+        if (direction === 'up') {
             this.body.setVelocityY(-600);
         }
-        if (direction === "down") {
+        if (direction === 'down') {
             this.body.setVelocityY(600);
         }
-        if (direction === "left") {
+        if (direction === 'left') {
             this.body.setVelocityX(-600);
         }
-        if (direction === "right") {
+        if (direction === 'right') {
             this.body.setVelocityX(600);
         }
     }

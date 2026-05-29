@@ -2,6 +2,7 @@ import { Scene } from 'phaser';
 import { Player } from '../gameobjects/Player';
 import { Ball } from '../gameobjects/Ball';
 import { HudScene } from './HudScene';
+import { socket } from '../../app/data/socket.service';
 
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
@@ -17,7 +18,11 @@ export class MainScene extends Scene {
     allPlayers: Array<any> = [];
     currentUserId: string;
 
+    initialGameData: any;
+
     hudScene: HudScene;
+
+    socket: any;
 
     constructor() {
         super('MainScene');
@@ -27,7 +32,21 @@ export class MainScene extends Scene {
         this.add.image(0, 0, 'field').setOrigin(0, 0);
         this.scene.pause();
 
-        this.ball = new Ball(this);
+        this.socket = socket;
+
+        this.socket.on('BALL_POSITION_UPDATE', (data: any) => {
+            console.log('Ball position update received', data);
+            this.ball.setPosition(data.ballPosition.x, data.ballPosition.y);
+        });
+
+        this.initialGameData = this.game.registry.get('initialGameData');
+        console.log('INITIAL GAME DATA', this.initialGameData);
+
+        this.ball = new Ball(
+            this,
+            this.initialGameData.ballPosition.x,
+            this.initialGameData.ballPosition.y,
+        );
 
         this.currentUserId = this.game.registry.get('currentUserId') as string;
         this.allPlayers = this.game.registry.get('players') as Array<any>;

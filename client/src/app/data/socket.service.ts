@@ -4,14 +4,17 @@ import { io, Socket } from 'socket.io-client';
 import { Subject } from 'rxjs';
 import { Player } from '../utils/player.interface';
 
+export let socket: Socket;
+
 @Injectable({
     providedIn: 'root',
 })
 export class SocketService {
     private router = inject(Router);
-    private socket: Socket;
+    socket: Socket;
 
     playersInLobbyChange$ = new Subject<Array<Player>>();
+    gameInitialDataChange$ = new Subject<any>();
     gameIdChange$ = new Subject<string>();
 
     connect(playerName: string, gameId: string, userId: string) {
@@ -22,6 +25,8 @@ export class SocketService {
                 userId,
             },
         });
+        socket = this.socket;
+        console.log(this.socket);
 
         this.socket.on('connect', () => {
             console.log('Connected to Socket.IO server', this.socket.id);
@@ -38,6 +43,9 @@ export class SocketService {
 
         this.socket.on('GAME_STARTED', (res) => {
             this.playersInLobbyChange$.next(res.users);
+            this.gameInitialDataChange$.next({
+                ballPosition: res.ballPosition,
+            });
         });
     }
 

@@ -26,6 +26,7 @@ export class PhaserGame implements OnInit {
                     'game-container',
                     this.lobbyStore.playersInLobby(),
                     this.lobbyStore.user()!.id,
+                    this.lobbyStore.initialGameData(),
                 );
             }
         });

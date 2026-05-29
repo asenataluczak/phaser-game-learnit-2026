@@ -25,7 +25,7 @@
         "Angular"
     ],
     "dependencies": {
-        "@angular-architects/ngrx-toolkit": "^21.0.1",
+        "@angular-architects/ngrx-toolkit": "^19.0.1",
         "@angular/common": "^19.2.0",
         "@angular/compiler": "^19.2.0",
         "@angular/core": "^19.2.0",
@@ -33,12 +33,11 @@
         "@angular/platform-browser": "^19.2.0",
         "@angular/platform-browser-dynamic": "^19.2.0",
         "@angular/router": "^19.2.0",
-        "@ngrx/signals": "^21.1.0",
+        "@ngrx/signals": "^19.1.0",
         "@tailwindcss/postcss": "^4.3.0",
         "phaser": "4.0.0",
         "postcss": "^8.5.15",
         "rxjs": "~7.8.0",
-        "socket.io": "^4.8.3",
         "socket.io-client": "^4.8.3",
         "tailwindcss": "^4.3.0",
         "tslib": "^2.3.0",
