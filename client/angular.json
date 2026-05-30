@@ -68,7 +68,13 @@
                             "buildTarget": "template-angular:build:development"
                         }
                     },
-                    "defaultConfiguration": "development"
+                    "defaultConfiguration": "development",
+                    "options": {
+                        "allowedHosts": [
+                            "http://localhost:4200",
+                            "https://ankara-messi.asenata.dev"
+                        ]
+                    }
                 },
                 "extract-i18n": {
                     "builder": "@angular-devkit/build-angular:extract-i18n"
