@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { io, Socket } from 'socket.io-client';
 import { Subject } from 'rxjs';
 import { Player } from '../utils/player.interface';
+import { environment } from '../../environments/environment';
 
 export let socket: Socket;
 
@@ -18,7 +19,7 @@ export class SocketService {
     gameIdChange$ = new Subject<string>();
 
     connect(playerName: string, gameId: string, userId: string) {
-        this.socket = io('http://localhost:3000', {
+        this.socket = io(environment.API_URL, {
             query: {
                 username: playerName,
                 gameId,

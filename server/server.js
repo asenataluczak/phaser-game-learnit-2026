@@ -8,9 +8,13 @@ import {
   physics,
 } from "./physics.js";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const io = new Server({
   cors: {
-    origin: "http://localhost:4200",
+    origin: isProd
+      ? "https://ankara-messi.asenata.dev"
+      : "http://localhost:4200",
   },
 });
 

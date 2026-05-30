@@ -5,7 +5,8 @@
     "scripts": {
         "ng": "ng",
         "dev": "ng serve",
-        "build": "ng build --base-href='./'"
+        "build": "ng build --base-href='./'",
+        "build-prod": "ng build --base-href='./' --configuration production"
     },
     "repository": {
         "type": "git",

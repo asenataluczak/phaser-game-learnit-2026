@@ -8,10 +8,12 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start-prod": "cross-env NODE_ENV=production node server.js",
+    "start": "node --watch server.js"
   },
   "dependencies": {
     "arcade-physics": "^0.1.0",
+    "cross-env": "^10.1.0",
     "nanoid": "^5.1.11",
     "socket.io": "^4.8.3"
   }
