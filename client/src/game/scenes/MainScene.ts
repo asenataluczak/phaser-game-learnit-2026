@@ -246,21 +246,21 @@ export class MainScene extends Scene {
         // Remote players interpolation (by id)
         // ... find matching player in a & b, then Linear(x), Linear(y), set sprite position ...
         this.allPlayerSprites.forEach((player: any, i: number) => {
-            // if (i === this.currentUserIndex) return;
             const ax = a.playerSpriteListData[i].x;
             const ay = a.playerSpriteListData[i].y;
             const bx = b.playerSpriteListData[i].x;
             const by = b.playerSpriteListData[i].y;
-            this.allPlayerSprites[i].setPosition(
-                Phaser.Math.Linear(ax, bx, t),
-                Phaser.Math.Linear(ay, by, t),
-            );
             if (i === this.currentUserIndex) {
                 this.localPlayerSprite.setPosition(
                     Phaser.Math.Linear(ax, bx, t),
                     Phaser.Math.Linear(ay, by, t),
                 );
             }
+
+            this.allPlayerSprites[i].setPosition(
+                Phaser.Math.Linear(ax, bx, t),
+                Phaser.Math.Linear(ay, by, t),
+            );
         });
     }
 

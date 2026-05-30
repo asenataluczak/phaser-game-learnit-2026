@@ -29,20 +29,24 @@ export class Player extends Physics.Arcade.Image {
         }
 
         this.setCollideWorldBounds();
-        // this.setDisplaySize(100, 100);
-        this.setCircle(145);
+
+        const size = 90;
+        this.setDisplaySize(size, size);
+        this.setOrigin(0, 0);
+        this.body.setCircle(size / 2 / this.scaleX);
         this.setMass(2);
         this.setBounce(0.6);
         this.setInteractive();
         this.setDamping(true);
-        this.setDrag(0.4);
+        this.setDrag(0.3);
+        this.refreshBody();
 
         this.listenForLoadingKick();
     }
 
     loadKick(mx: number, my: number) {
-        const px = this.x;
-        const py = this.y;
+        const px = this.body.center.x;
+        const py = this.body.center.y;
 
         let targetX = 2 * px - mx;
         let targetY = 2 * py - my;
@@ -57,7 +61,9 @@ export class Player extends Physics.Arcade.Image {
             targetY = vectorToTarget.y + py;
         }
 
-        const vectorToBorder = vectorToTarget.clone().setLength(56);
+        const vectorToBorder = vectorToTarget
+            .clone()
+            .setLength(this.body.width / 2);
         const borderX = px + vectorToBorder.x;
         const borderY = py + vectorToBorder.y;
 
@@ -97,7 +103,7 @@ export class Player extends Physics.Arcade.Image {
 
         const dirX = rawVelocity.x * speed;
         const dirY = rawVelocity.y * speed;
-        // this.body.setVelocity(dirX, dirY);
+        this.body.setVelocity(dirX, dirY);
 
         return {
             type: 'kick',

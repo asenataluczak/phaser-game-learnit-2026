@@ -9,13 +9,16 @@ export class Ball extends Physics.Arcade.Image {
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
 
+        const size = 75;
         this.setCollideWorldBounds();
-        this.setDisplaySize(80, 80);
-        this.setCircle(255);
+        this.setDisplaySize(size, size);
+        this.setOrigin(0, 0);
+        this.body.setCircle(size / 2 / this.scaleX);
         this.setBounce(0.8, 0.8);
         this.setMass(0.5);
         this.setDamping(true);
         this.setDrag(0.7);
+        this.refreshBody();
     }
 
     move(direction: 'up' | 'down' | 'left' | 'right') {
