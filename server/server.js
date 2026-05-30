@@ -1,7 +1,8 @@
 import { nanoid } from "nanoid";
 import { Server } from "socket.io";
 import { readFileSync } from "fs";
-import { createServer } from "http";
+import * as https from "node:https";
+import * as http from "node:http";
 import {
   getBallPosition,
   createBall,
@@ -12,14 +13,16 @@ import {
 
 const isProd = process.env.NODE_ENV === "production";
 
-const serverOptions = isProd
-  ? {
-      key: readFileSync("/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.key"),
-      cert: readFileSync("/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.crt"),
-    }
-  : {};
-
-const httpsServer = createServer({ ...serverOptions });
+const httpsServer = isProd
+  ? https.createServer({
+      key: readFileSync(
+        "/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.key",
+      ),
+      cert: readFileSync(
+        "/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.crt",
+      ),
+    })
+  : http.createServer();
 
 const io = new Server(httpsServer, {
   cors: {
@@ -27,6 +30,10 @@ const io = new Server(httpsServer, {
       ? "https://ankara-messi.asenata.dev"
       : "http://localhost:4200",
   },
+});
+
+httpsServer.listen({ port: 3000 }, () => {
+  console.log("server is listening");
 });
 
 const INITIAL_POSITIONS_TEAM_A = [
@@ -44,7 +51,12 @@ let allConnectedUsers = [];
 const lobbies = new Map();
 io.on("connection", (socket) => {
   const { username, userId, gameId: _gameId } = socket.handshake.query;
-  console.log("New connection:", { username, userId, _gameId });
+  console.log("New connection:", {
+    username,
+    userId,
+    _gameId,
+    sid: socket.handshake,
+  });
 
   if (!userId) {
     socket.disconnect(true);
@@ -97,8 +109,8 @@ io.on("connection", (socket) => {
     lobbies.get(gameId).playerSpriteList = playerSpriteList;
     lobbies.get(gameId).ballSprite = createBall();
 
-    const SIM_DT_MS = 15;
-    const UPDATE_DT_MS = 45;
+    const SIM_DT_MS = 7;
+    const UPDATE_DT_MS = 15;
 
     io.sockets.to(gameId).emit("GAME_STARTED", {
       ...getSnapshotOfLobby(lobbies.get(gameId)),
@@ -139,10 +151,6 @@ io.on("connection", (socket) => {
       gameId: gameId,
     });
   });
-});
-
-httpsServer.listen({ port: 3000 }, () => {
-  console.log("server is listening");
 });
 
 const getCalculatedTeam = (gameId) => {
