@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { Server } from "socket.io";
 import { readFileSync } from "fs";
-import { createServer } from "https";
+import { createServer } from "http";
 import {
   getBallPosition,
   createBall,
