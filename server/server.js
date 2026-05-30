@@ -1,5 +1,7 @@
 import { nanoid } from "nanoid";
 import { Server } from "socket.io";
+import { readFileSync } from "fs";
+import { createServer } from "http";
 import {
   getBallPosition,
   createBall,
@@ -10,7 +12,16 @@ import {
 
 const isProd = process.env.NODE_ENV === "production";
 
-const io = new Server({
+const serverOptions = isProd
+  ? {
+      key: readFileSync("/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.key"),
+      cert: readFileSync("/app/ankara-messi/server/ssl/ankara-messi.asenata.dev.crt"),
+    }
+  : {};
+
+const httpsServer = createServer({ ...serverOptions });
+
+const io = new Server(httpsServer, {
   cors: {
     origin: isProd
       ? "https://ankara-messi.asenata.dev"
@@ -130,8 +141,9 @@ io.on("connection", (socket) => {
   });
 });
 
-io.listen(3000);
-console.log("server is listening");
+httpsServer.listen({ port: 3000 }, () => {
+  console.log("server is listening");
+});
 
 const getCalculatedTeam = (gameId) => {
   const usersInTheRoom = lobbies.get(gameId).players;
