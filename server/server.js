@@ -3,13 +3,7 @@ import { Server } from "socket.io";
 import { readFileSync } from "fs";
 import * as https from "node:https";
 import * as http from "node:http";
-import {
-  getBallPosition,
-  createBall,
-  getPlayersPositions,
-  createPlayerSprite,
-  physics,
-} from "./physics.js";
+import { createBall, createPlayerSprite, physics } from "./physics.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -55,7 +49,6 @@ io.on("connection", (socket) => {
     username,
     userId,
     _gameId,
-    sid: socket.handshake,
   });
 
   if (!userId) {
@@ -98,6 +91,8 @@ io.on("connection", (socket) => {
     const usersInTheRoom = lobbies.get(gameId).players;
     const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
     const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
+
+    lobbies.get(gameId).ballSprite = createBall();
     const playerSpriteList = [
       ...playersTeamA.map((p, i) =>
         createPlayerSprite(...Object.values(INITIAL_POSITIONS_TEAM_A[i])),
@@ -107,7 +102,6 @@ io.on("connection", (socket) => {
       ),
     ];
     lobbies.get(gameId).playerSpriteList = playerSpriteList;
-    lobbies.get(gameId).ballSprite = createBall();
 
     const SIM_DT_MS = 7;
     const UPDATE_DT_MS = 15;

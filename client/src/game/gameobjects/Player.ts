@@ -34,11 +34,12 @@ export class Player extends Physics.Arcade.Image {
         this.setDisplaySize(size, size);
         this.setOrigin(0, 0);
         this.body.setCircle(size / 2 / this.scaleX);
-        this.setMass(2);
+        this.setMass(1);
         this.setBounce(0.6);
         this.setInteractive();
         this.setDamping(true);
         this.setDrag(0.3);
+        this.body.pushable = true;
         this.refreshBody();
 
         this.listenForLoadingKick();

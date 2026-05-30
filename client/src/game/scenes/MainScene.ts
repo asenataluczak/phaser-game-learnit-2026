@@ -80,9 +80,18 @@ export class MainScene extends Scene {
                     this.initialGameData.playerSpriteListData,
                 );
             }
+            this.allPlayerSprites.forEach((p, i) => {
+                this.physics.add.collider(
+                    playerSprite,
+                    this.allPlayerSprites[i],
+                );
+                this.physics.add.collider(
+                    this.localPlayerSprite,
+                    this.allPlayerSprites[i],
+                );
+            });
             this.allPlayerSprites.push(playerSprite);
-
-            // this.physics.add.collider(playerSprite, this.ball);
+            this.physics.add.collider(playerSprite, this.ball);
         });
         this.scene.resume();
 

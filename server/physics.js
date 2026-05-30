@@ -28,55 +28,32 @@ const createBall = () => {
   ball.setDamping(true);
   ball.setDrag(0.7);
   ballSprite = ball;
-  console.log(
-    ball.top,
-    ball.left,
-    ball.width,
-    ball.height,
-    ball.center.x,
-    ball.center.y,
-  );
   return ball;
 };
 // set colliders on ball
 
-const getBallPosition = (ball) => {
-  return {
-    x: ball.x,
-    y: ball.y,
-  };
-};
-
-const playersPositions = {};
+const playersSprites = [];
 const createPlayerSprite = (x, y) => {
   const size = 90;
   const body = physics.add.body(x, y, size, size);
   body.setCollideWorldBounds();
   body.setCircle(size / 2);
-  body.setMass(2);
+  body.setMass(1);
   body.setBounce(0.6);
   body.setDamping(true);
   body.setDrag(0.3);
+  body.pushable = true;
+
   physics.add.collider(ballSprite, body);
+  physics.add.collider(body, ballSprite);
+
+  playersSprites.forEach((p, i) => {
+    physics.add.collider(body, playersSprites[i]);
+  });
+  playersSprites.push(body);
 
   return body;
 };
 // set colliders on players
 
-const getPlayersPositions = (players) => {
-  return [...players].map((player) => ({
-    ...player,
-    position: {
-      x: playersPositions[player.id]?.x,
-      y: playersPositions[player.id]?.y,
-    },
-  }));
-};
-
-export {
-  physics,
-  createBall,
-  getBallPosition,
-  createPlayerSprite,
-  getPlayersPositions,
-};
+export { physics, createBall, createPlayerSprite };
