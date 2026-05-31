@@ -25,6 +25,7 @@ const io = new Server(httpsServer, {
       ? "https://ankara-messi.asenata.dev"
       : "http://localhost:4200",
   },
+  path: "/socket.io",
 });
 
 httpsServer.listen({ port: 3000 }, () => {
