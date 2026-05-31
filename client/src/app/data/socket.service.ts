@@ -64,6 +64,6 @@ export class SocketService {
     }
 
     emitGameStop() {
-        this.socket.emit('GAME_STOPPED');
+        this.socket?.emit('GAME_STOPPED');
     }
 }
