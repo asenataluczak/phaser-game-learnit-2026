@@ -9,15 +9,23 @@ import { LobbyStore } from '../data/lobby.store';
 })
 export class MainMenu {
     private readonly socketService = inject(SocketService);
-    private readonly lobbyStore = inject(LobbyStore);
+    readonly lobbyStore = inject(LobbyStore);
 
     constructor() {
         console.log('main menu constructor');
-        localStorage.removeItem('USER_NAME');
-        localStorage.removeItem('USER_ID');
     }
 
     connect(playerName: string, gameId?: string) {
         this.lobbyStore.connectNewUser(playerName, gameId || '');
+    }
+
+    createGame(playerName: string) {
+        if (!playerName) return;
+        this.lobbyStore.createGame(playerName);
+    }
+
+    joinGame(playerName: string, gameId: string) {
+        if (!playerName || !gameId) return;
+        this.lobbyStore.joinGame(playerName, gameId);
     }
 }

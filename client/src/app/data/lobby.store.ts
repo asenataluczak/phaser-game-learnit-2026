@@ -42,7 +42,7 @@ export const LobbyStore = signalStore(
                 .find((p: Player) => p.id === store.user()?.id),
         ),
     })),
-    withMethods((store, socket = inject(SocketService)) => ({
+    withMethods((store, socketService = inject(SocketService)) => ({
         connectNewUser(name: string, gameId?: string) {
             const userId = localStorage.getItem('USER_ID');
             const newUserId = userId || nanoid(8);
@@ -59,16 +59,37 @@ export const LobbyStore = signalStore(
                 },
             });
 
-            if (socket.socket?.connected) return;
-            socket.connect(name, gameId || '', newUserId);
+            if (socketService.socket?.connected) return;
+            socketService.connect(name, newUserId, gameId || '');
         },
         startGame() {
-            socket.emitStartGame(store.gameId() || '');
+            socketService.emitStartGame(store.gameId() || '');
+        },
+        createGame(name: string) {
+            if (!socketService.socket?.connected) {
+                this.connectNewUser(name);
+            }
+            socketService.emitCreateGame();
+        },
+        joinGame(name: string, gameId: string) {
+            if (!socketService.socket?.connected) {
+                this.connectNewUser(name, gameId);
+            }
+            socketService.emitJoinGame(gameId);
         },
     })),
     withHooks(
         (store, router = inject(Router), socket = inject(SocketService)) => ({
             onInit() {
+                const userId = localStorage.getItem('USER_ID');
+                const username = localStorage.getItem('USER_NAME');
+                patchState(store, {
+                    user: {
+                        id: userId || '',
+                        name: username || '',
+                    },
+                });
+
                 socket.playersInLobbyChange$.subscribe((players) => {
                     console.log(players);
                     const currentUser = players.find(
@@ -118,6 +139,10 @@ export const LobbyStore = signalStore(
                             'id'
                         ];
 
+                        if (!window.location.href.includes('/game/')) {
+                            socket.emitGameStop();
+                        }
+
                         console.log('Route change, gameId:', gameId);
                         if (!gameId) return;
                         const userId = localStorage.getItem('USER_ID');
@@ -139,7 +164,7 @@ export const LobbyStore = signalStore(
                                 name: username,
                             },
                         });
-                        socket.connect(username || '', gameId, userId || '');
+                        socket.connect(username, userId, gameId);
                     });
             },
         }),

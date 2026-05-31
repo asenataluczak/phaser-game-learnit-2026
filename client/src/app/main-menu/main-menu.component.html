@@ -10,13 +10,14 @@
             type="text"
             class="mb-8 rounded-lg"
             placeholder="your name"
+            [value]="lobbyStore.user()?.name || ''"
         />
 
         <button
             id="createBtn"
             class="btn btn-primary w-full"
             type="button"
-            (click)="connect(name.value)"
+            (click)="createGame(name.value)"
         >
             create
         </button>
@@ -35,7 +36,7 @@
             <button
                 class="btn btn-secondary rounded-r-lg"
                 type="button"
-                (click)="connect(name.value, gameId.value)"
+                (click)="joinGame(name.value, gameId.value)"
             >
                 join
             </button>

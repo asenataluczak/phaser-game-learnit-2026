@@ -9,7 +9,7 @@ import { unpack } from 'msgpackr';
 const SIM_DT_MS = 15;
 const INTERP_DELAY_MS = 100; // adjust based on network conditions
 
-const GAME_TIMEOUT = 10;
+const GAME_TIMEOUT = 20;
 
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
@@ -60,6 +60,7 @@ export class MainScene extends Scene {
         this.socket.on('GAME_RESET', (initialGameData: any) => {
             this.hudScene.scene.restart();
             this.localPlayerSprite.setInteractive();
+            this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
             this.scene.resume();
         });
 
@@ -298,9 +299,9 @@ export class MainScene extends Scene {
                     reset: true,
                 });
                 canPress = false;
-                this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
             },
         );
+        this.socket.emit('GAME_STOPPED');
         this.scene.pause();
     }
 

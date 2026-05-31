@@ -45,26 +45,10 @@ const INITIAL_POSITIONS_TEAM_B = [
   { x: 350, y: 200 },
 ];
 
-let allConnectedUsers = [];
-
 const lobbies = new Map();
-io.on("connection", (socket) => {
-  const { username, userId, gameId: _gameId } = socket.handshake.query;
-  console.log("New connection:", {
-    username,
-    userId,
-    _gameId,
-  });
+const userSockets = new Map();
 
-  socket.conn.once("upgrade", () => {
-    if (!userId) {
-      socket.disconnect(true);
-    }
-  });
-
-  const gameId = _gameId || nanoid(6);
-  socket.join(gameId);
-
+const ensureLobby = (gameId) => {
   if (!lobbies.has(gameId)) {
     lobbies.set(gameId, {
       players: [],
@@ -74,120 +58,206 @@ io.on("connection", (socket) => {
       score: { A: 0, B: 0 },
     });
   }
+  return lobbies.get(gameId);
+};
 
-  const userAlreadyInLobby = lobbies.get(gameId).players.find((player) => {
-    return player.id === userId;
-  });
-  if (!userAlreadyInLobby) {
-    const user = {
-      id: userId.toString(),
-      name: username.toString(),
-      gameId,
-      team: getCalculatedTeam(gameId),
-      host: !lobbies.get(gameId).players.length,
-    };
-    lobbies.get(gameId).players.push(user);
-  }
-
+const emitUsersInLobbyChange = (gameId) => {
+  if (!gameId || !lobbies.has(gameId)) return;
   io.sockets.to(gameId).emit("USERS_IN_LOBBY_CHANGE", {
     users: lobbies.get(gameId).players,
-    gameId: gameId,
+    gameId,
   });
+};
 
-  socket.on("START_GAME", ({ gameId, reset = false }) => {
-    if (!gameId) return;
-    const lobby = lobbies.get(gameId);
-    lobby.physics = createPhysics();
-    const usersInTheRoom = lobby.players;
-    const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
-    const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
+const removeUserFromLobby = (gameId, userId) => {
+  if (!gameId || !userId || !lobbies.has(gameId)) return;
+  const lobby = lobbies.get(gameId);
+  lobby.players = lobby.players.filter((p) => p.id !== userId);
 
-    let canScoreIncrease = true;
-    lobby.ballSprite = createBall(lobby.physics, (team) => {
-      if (!canScoreIncrease) return;
-      lobby.score[team]++;
-      io.sockets.to(gameId).emit("SCORE_UPDATE", {
-        ...lobby.score,
-      });
-      canScoreIncrease = false;
-    });
-    const playerSpriteList = [];
-    playersTeamA.forEach((p, i) => {
-      const sprite = createPlayerSprite(
-        ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
-        lobby.physics,
-      );
-      if (playerSpriteList.length) {
-        playerSpriteList.forEach((p, i) => {
-          lobby.physics.add.collider(sprite, playerSpriteList[i]);
-        });
-      }
-      playerSpriteList.push(sprite);
-    });
-    playersTeamB.forEach((p, i) => {
-      const sprite = createPlayerSprite(
-        ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
-        lobby.physics,
-      );
-      if (playerSpriteList.length) {
-        playerSpriteList.forEach((p, i) => {
-          lobby.physics.add.collider(sprite, playerSpriteList[i]);
-        });
-      }
-      playerSpriteList.push(sprite);
-    });
+  if (!lobby.players.length) {
+    lobbies.delete(gameId);
+  } else {
+    // If the host left, make the first player the new host.
+    const anyHost = lobby.players.some((p) => p.host);
+    if (!anyHost) lobby.players[0].host = true;
+  }
+};
 
-    lobby.playerSpriteList = [...playerSpriteList];
+const joinLobby = (socket, gameId) => {
+  const { userId, username } = socket.data;
+  if (!userId || !username) return;
 
-    const SIM_DT_MS = 15;
-    const UPDATE_DT_MS = 45;
+  const prevGameId = socket.data.gameId;
+  if (prevGameId && prevGameId !== gameId) {
+    socket.leave(prevGameId);
+    removeUserFromLobby(prevGameId, userId);
+    emitUsersInLobbyChange(prevGameId);
+  }
 
-    if (reset) {
-      lobby.score = { A: 0, B: 0 };
-    }
+  socket.data.gameId = gameId;
+  socket.join(gameId);
 
-    io.sockets.to(gameId).emit(reset ? "GAME_RESET" : "GAME_STARTED", {
-      ...getSnapshotOfLobby(lobby),
-      players: lobby.players,
+  const lobby = ensureLobby(gameId);
+
+  const userAlreadyInLobby = lobby.players.find((p) => p.id === userId);
+  if (!userAlreadyInLobby) {
+    lobby.players.push({
+      id: userId,
+      name: username,
       gameId,
+      team: getCalculatedTeam(gameId),
+      host: !lobby.players.length,
     });
+  }
 
-    let simTime = 0;
-    const physicsInterval = setInterval(() => {
-      simTime++;
-      lobby.physics.world.update(simTime, SIM_DT_MS);
-    }, SIM_DT_MS);
+  emitUsersInLobbyChange(gameId);
+};
 
-    const snapshotInterval = setInterval(() => {
-      const snapshot = getSnapshotOfLobby(lobby);
-      io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
-    }, UPDATE_DT_MS);
+io.use((socket, next) => {
+  const { username, userId } = socket.handshake.query;
 
-    socket.on("GAME_OVER", () => {
-      clearInterval(physicsInterval);
-      clearInterval(snapshotInterval);
-    });
+  if (!username || !userId) {
+    console.log("ERROR");
+    return next(new Error("Invalid handshake"));
+  }
+
+  next();
+});
+io.on("connection", (socket) => {
+  const { username, userId, gameId: _gameId } = socket.handshake.query;
+  console.log(socket.handshake.query);
+
+  socket.data.userId = userId.toString();
+  socket.data.username = username.toString();
+
+  // Enforce 1 active socket per userId.
+  const existingSocketId = userSockets.get(socket.data.userId);
+  if (existingSocketId && existingSocketId !== socket.id) {
+    const existingSocket = io.sockets.sockets.get(existingSocketId);
+    existingSocket?.disconnect(true);
+  }
+  userSockets.set(socket.data.userId, socket.id);
+
+  console.log("New connection:", {
+    username: socket.data.username,
+    userId: socket.data.userId,
+    _gameId,
   });
+
+  const initialGameId = (_gameId && _gameId.toString()) || nanoid(6);
+  joinLobby(socket, initialGameId);
+  if (!_gameId) {
+    socket.emit("GAME_ID_ASSIGNED", { gameId: initialGameId });
+  }
+
+  socket.on("JOIN_GAME", ({ gameId }) => {
+    if (!gameId) return;
+    joinLobby(socket, gameId.toString());
+  });
+
+  socket.on("CREATE_GAME", () => {
+    const gameId = nanoid(6);
+    joinLobby(socket, gameId);
+    socket.emit("GAME_ID_ASSIGNED", { gameId });
+  });
+
+  socket.on(
+    "START_GAME",
+    ({ gameId: gameIdFromPayload, reset = false } = {}) => {
+      const gameId = socket.data.gameId || gameIdFromPayload;
+      if (!gameId || !lobbies.has(gameId)) return;
+
+      const lobby = lobbies.get(gameId);
+      lobby.physics = createPhysics();
+      const usersInTheRoom = lobby.players;
+      const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
+      const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
+
+      let canScoreIncrease = true;
+      lobby.ballSprite = createBall(lobby.physics, (team) => {
+        if (!canScoreIncrease) return;
+        lobby.score[team]++;
+        io.sockets.to(gameId).emit("SCORE_UPDATE", {
+          ...lobby.score,
+        });
+        canScoreIncrease = false;
+      });
+      const playerSpriteList = [];
+      playersTeamA.forEach((p, i) => {
+        const sprite = createPlayerSprite(
+          ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
+          lobby.physics,
+        );
+        if (playerSpriteList.length) {
+          playerSpriteList.forEach((p, i) => {
+            lobby.physics.add.collider(sprite, playerSpriteList[i]);
+          });
+        }
+        playerSpriteList.push(sprite);
+      });
+      playersTeamB.forEach((p, i) => {
+        const sprite = createPlayerSprite(
+          ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
+          lobby.physics,
+        );
+        if (playerSpriteList.length) {
+          playerSpriteList.forEach((p, i) => {
+            lobby.physics.add.collider(sprite, playerSpriteList[i]);
+          });
+        }
+        playerSpriteList.push(sprite);
+      });
+
+      lobby.playerSpriteList = [...playerSpriteList];
+
+      const SIM_DT_MS = 15;
+      const UPDATE_DT_MS = 45;
+
+      if (reset) {
+        lobby.score = { A: 0, B: 0 };
+      }
+
+      io.sockets.to(gameId).emit(reset ? "GAME_RESET" : "GAME_STARTED", {
+        ...getSnapshotOfLobby(lobby),
+        players: lobby.players,
+        gameId,
+      });
+
+      let simTime = 0;
+      const physicsInterval = setInterval(() => {
+        simTime++;
+        lobby.physics.world.update(simTime, SIM_DT_MS);
+      }, SIM_DT_MS);
+
+      const snapshotInterval = setInterval(() => {
+        const snapshot = getSnapshotOfLobby(lobby);
+        io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
+      }, UPDATE_DT_MS);
+
+      socket.on("GAME_STOPPED", () => {
+        clearInterval(physicsInterval);
+        clearInterval(snapshotInterval);
+      });
+    },
+  );
 
   socket.on("INPUT", (cmd, playerIndex) => {
-    lobbies
-      .get(gameId)
-      .playerSpriteList[playerIndex].setVelocity(cmd.dir.x, cmd.dir.y);
+    const gameId = socket.data.gameId;
+    if (!gameId || !lobbies.has(gameId)) return;
+    const lobby = lobbies.get(gameId);
+    if (!lobby.playerSpriteList[playerIndex]) return;
+    lobby.playerSpriteList[playerIndex].setVelocity(cmd.dir.x, cmd.dir.y);
   });
 
   socket.on("disconnect", (reason) => {
+    if (userSockets.get(socket.data.userId) !== socket.id) return;
+
     console.log("DISCONNECTED", socket.id, reason);
-    allConnectedUsers = allConnectedUsers.filter((user) => user.id !== userId);
-    if (lobbies.has(gameId)) {
-      const players = lobbies
-        .get(gameId)
-        .players.filter((player) => player.id !== userId);
-      lobbies.get(gameId).players = players;
-    }
-    io.sockets.to(gameId).emit("USERS_IN_LOBBY_CHANGE", {
-      users: lobbies.get(gameId).players,
-      gameId: gameId,
-    });
+    userSockets.delete(socket.data.userId);
+
+    const gameId = socket.data.gameId;
+    removeUserFromLobby(gameId, socket.data.userId);
+    emitUsersInLobbyChange(gameId);
   });
 });
 

@@ -18,7 +18,7 @@ export class SocketService {
     gameInitialDataChange$ = new Subject<any>();
     gameIdChange$ = new Subject<string>();
 
-    connect(playerName: string, gameId: string, userId: string) {
+    connect(playerName: string, userId: string, gameId?: string) {
         this.socket = io(environment.API_URL, {
             query: {
                 username: playerName,
@@ -33,13 +33,17 @@ export class SocketService {
             console.log('Connected to Socket.IO server', this.socket.id);
         });
 
-        this.socket.on('disconnect', () => {
-            this.router.navigateByUrl('/');
+        this.socket.on('disconnect', (reason) => {
+            console.log('disconnected', reason);
         });
 
         this.socket.on('USERS_IN_LOBBY_CHANGE', (res) => {
             this.playersInLobbyChange$.next(res.users);
             this.gameIdChange$.next(res.gameId);
+        });
+
+        this.socket.on('GAME_ID_ASSIGNED', ({ gameId }) => {
+            this.gameIdChange$.next(gameId);
         });
 
         this.socket.on('GAME_STARTED', (snapshot) => {
@@ -49,5 +53,17 @@ export class SocketService {
 
     emitStartGame(gameId: string) {
         this.socket.emit('START_GAME', { gameId });
+    }
+
+    emitCreateGame() {
+        this.socket.emit('CREATE_GAME');
+    }
+
+    emitJoinGame(gameId: string) {
+        this.socket.emit('JOIN_GAME', { gameId });
+    }
+
+    emitGameStop() {
+        this.socket.emit('GAME_STOPPED');
     }
 }
