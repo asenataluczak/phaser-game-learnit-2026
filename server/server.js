@@ -56,10 +56,11 @@ io.on("connection", (socket) => {
     _gameId,
   });
 
-  if (!userId) {
-    socket.disconnect(true);
-    return;
-  }
+  socket.conn.once("upgrade", () => {
+    if (!userId) {
+      socket.disconnect(true);
+    }
+  });
 
   const gameId = _gameId || nanoid(6);
   socket.join(gameId);
