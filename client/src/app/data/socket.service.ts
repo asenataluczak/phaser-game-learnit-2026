@@ -25,6 +25,7 @@ export class SocketService {
                 gameId,
                 userId,
             },
+            path: environment.API_PATH
         });
         socket = this.socket;
         console.log(this.socket);
