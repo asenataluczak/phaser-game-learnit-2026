@@ -4,6 +4,7 @@ import { Ball } from '../gameobjects/Ball';
 import { HudScene } from './HudScene';
 import { socket } from '../../app/data/socket.service';
 import * as Phaser from 'phaser';
+import { unpack } from 'msgpackr';
 
 const SIM_DT_MS = 15;
 const INTERP_DELAY_MS = 100; // adjust based on network conditions
@@ -37,6 +38,8 @@ export class MainScene extends Scene {
     pendingInputs: Array<any> = [];
     localState = { x: 0, y: 0 }; // initialize when you get initial spawn
 
+    players: any;
+
     constructor() {
         super('MainScene');
     }
@@ -45,6 +48,8 @@ export class MainScene extends Scene {
         this.add.image(0, 0, 'field').setOrigin(0, 0);
         this.scene.pause();
         this.physics.world.setBounds(0, 56, 1280, 664);
+
+        this.players = this.physics.add.group();
 
         this.socket = socket;
 
@@ -60,15 +65,15 @@ export class MainScene extends Scene {
         );
         this.ball = new Ball(
             this,
-            this.initialGameData.ballSpriteData.x,
-            this.initialGameData.ballSpriteData.y,
+            this.initialGameData.b.x,
+            this.initialGameData.b.y,
         );
         this.initialGameData.players.forEach((player: any, i: number) => {
             const isCurrentUser = i === this.currentUserIndex;
             const playerSprite = new Player(
                 this,
-                this.initialGameData.playerSpriteListData[i].x,
-                this.initialGameData.playerSpriteListData[i].y,
+                this.initialGameData.p[i].x,
+                this.initialGameData.p[i].y,
                 isCurrentUser,
                 player.team,
             );
@@ -77,27 +82,20 @@ export class MainScene extends Scene {
                 console.log(
                     'CURRENT USER SPRITE',
                     this.localPlayerSprite,
-                    this.initialGameData.playerSpriteListData,
+                    this.initialGameData.p,
                 );
             }
-            this.allPlayerSprites.forEach((p, i) => {
-                this.physics.add.collider(
-                    playerSprite,
-                    this.allPlayerSprites[i],
-                );
-                this.physics.add.collider(
-                    this.localPlayerSprite,
-                    this.allPlayerSprites[i],
-                );
-            });
+            this.players.add(playerSprite);
             this.allPlayerSprites.push(playerSprite);
+
+            this.physics.add.collider(this.players, this.players);
             this.physics.add.collider(playerSprite, this.ball);
         });
         this.scene.resume();
 
         this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
             this.snapshots.push({
-                ...snapshot,
+                ...unpack(snapshot),
                 recvClientTime: performance.now(),
             });
             if (this.snapshots.length > 30) this.snapshots.shift();
@@ -243,10 +241,10 @@ export class MainScene extends Scene {
             (b.recvClientTime - a.recvClientTime);
 
         // Ball interpolation
-        const ax = a.ballSpriteData.x;
-        const ay = a.ballSpriteData.y;
-        const bx = b.ballSpriteData.x;
-        const by = b.ballSpriteData.y;
+        const ax = a.b.x;
+        const ay = a.b.y;
+        const bx = b.b.x;
+        const by = b.b.y;
         this.ball.setPosition(
             Phaser.Math.Linear(ax, bx, t),
             Phaser.Math.Linear(ay, by, t),
@@ -255,10 +253,10 @@ export class MainScene extends Scene {
         // Remote players interpolation (by id)
         // ... find matching player in a & b, then Linear(x), Linear(y), set sprite position ...
         this.allPlayerSprites.forEach((player: any, i: number) => {
-            const ax = a.playerSpriteListData[i].x;
-            const ay = a.playerSpriteListData[i].y;
-            const bx = b.playerSpriteListData[i].x;
-            const by = b.playerSpriteListData[i].y;
+            const ax = a.p[i].x;
+            const ay = a.p[i].y;
+            const bx = b.p[i].x;
+            const by = b.p[i].y;
             if (i === this.currentUserIndex) {
                 this.localPlayerSprite.setPosition(
                     Phaser.Math.Linear(ax, bx, t),

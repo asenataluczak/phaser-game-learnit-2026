@@ -104,7 +104,7 @@ export class Player extends Physics.Arcade.Image {
 
         const dirX = rawVelocity.x * speed;
         const dirY = rawVelocity.y * speed;
-        this.body.setVelocity(dirX, dirY);
+        // this.body.setVelocity(dirX, dirY);
 
         return {
             type: 'kick',

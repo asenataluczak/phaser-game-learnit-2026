@@ -3,7 +3,8 @@ import { Server } from "socket.io";
 import { readFileSync } from "fs";
 import * as https from "node:https";
 import * as http from "node:http";
-import { createBall, createPlayerSprite, physics } from "./physics.js";
+import { pack } from "msgpackr";
+import { createBall, createPlayerSprite, createPhysics } from "./physics.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -33,11 +34,15 @@ httpsServer.listen({ port: 3000 }, () => {
 const INITIAL_POSITIONS_TEAM_A = [
   { x: 100, y: 100 },
   { x: 200, y: 200 },
+  { x: 300, y: 300 },
+  { x: 200, y: 400 },
 ];
 
 const INITIAL_POSITIONS_TEAM_B = [
-  { x: 500, y: 300 },
-  { x: 600, y: 300 },
+  { x: 500, y: 400 },
+  { x: 600, y: 500 },
+  { x: 400, y: 300 },
+  { x: 350, y: 200 },
 ];
 
 let allConnectedUsers = [];
@@ -64,6 +69,7 @@ io.on("connection", (socket) => {
       players: [],
       playerSpriteList: [],
       ballSprite: null,
+      physics: null,
     });
   }
 
@@ -88,23 +94,42 @@ io.on("connection", (socket) => {
 
   socket.on("START_GAME", ({ gameId }) => {
     if (!gameId) return;
+    lobbies.get(gameId).physics = createPhysics();
     const usersInTheRoom = lobbies.get(gameId).players;
     const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
     const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
 
-    lobbies.get(gameId).ballSprite = createBall();
-    const playerSpriteList = [
-      ...playersTeamA.map((p, i) =>
-        createPlayerSprite(...Object.values(INITIAL_POSITIONS_TEAM_A[i])),
-      ),
-      ...playersTeamB.map((p, i) =>
-        createPlayerSprite(...Object.values(INITIAL_POSITIONS_TEAM_B[i])),
-      ),
-    ];
-    lobbies.get(gameId).playerSpriteList = playerSpriteList;
+    lobbies.get(gameId).ballSprite = createBall(lobbies.get(gameId).physics);
+    const playerSpriteList = [];
+    playersTeamA.forEach((p, i) => {
+      const sprite = createPlayerSprite(
+        ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
+        lobbies.get(gameId).physics,
+      );
+      if (playerSpriteList.length) {
+        playerSpriteList.forEach((p, i) => {
+          lobbies.get(gameId).physics.add.collider(sprite, playerSpriteList[i]);
+        });
+      }
+      playerSpriteList.push(sprite);
+    });
+    playersTeamB.forEach((p, i) => {
+      const sprite = createPlayerSprite(
+        ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
+        lobbies.get(gameId).physics,
+      );
+      if (playerSpriteList.length) {
+        playerSpriteList.forEach((p, i) => {
+          lobbies.get(gameId).physics.add.collider(sprite, playerSpriteList[i]);
+        });
+      }
+      playerSpriteList.push(sprite);
+    });
 
-    const SIM_DT_MS = 7;
-    const UPDATE_DT_MS = 15;
+    lobbies.get(gameId).playerSpriteList = [...playerSpriteList];
+
+    const SIM_DT_MS = 15;
+    const UPDATE_DT_MS = 45;
 
     io.sockets.to(gameId).emit("GAME_STARTED", {
       ...getSnapshotOfLobby(lobbies.get(gameId)),
@@ -114,14 +139,17 @@ io.on("connection", (socket) => {
     let simTime = 0;
     setInterval(() => {
       simTime++;
-      physics.world.update(simTime, SIM_DT_MS);
-      // snapshot.ball.position = getBallPosition(ball);
-      // snapshot.players = getPlayersPositions(playersWithPositions);
+      lobbies.get(gameId).physics.world.update(simTime, SIM_DT_MS);
     }, SIM_DT_MS);
 
     setInterval(() => {
       const snapshot = getSnapshotOfLobby(lobbies.get(gameId));
-      io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", snapshot);
+      const anyMovement =
+        lobbies.get(gameId).ballSprite.speed > 3 ||
+        lobbies.get(gameId).playerSpriteList.some((p) => p.speed > 3);
+      if (anyMovement) {
+        io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
+      }
     }, UPDATE_DT_MS);
   });
 
@@ -155,12 +183,12 @@ const getCalculatedTeam = (gameId) => {
 };
 
 const getSnapshotOfLobby = (lobby) => ({
-  playerSpriteListData: lobby.playerSpriteList.map((p) => ({
-    x: p.x,
-    y: p.y,
+  p: lobby.playerSpriteList.map((p) => ({
+    x: parseFloat(p.x.toFixed(2)),
+    y: parseFloat(p.y.toFixed(2)),
   })),
-  ballSpriteData: {
-    x: lobby.ballSprite.x,
-    y: lobby.ballSprite.y,
+  b: {
+    x: parseFloat(lobby.ballSprite.x.toFixed(2)),
+    y: parseFloat(lobby.ballSprite.y.toFixed(2)),
   },
 });

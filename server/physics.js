@@ -9,11 +9,14 @@ const config = {
   },
 };
 
-const physics = new ArcadePhysics(config);
-physics.world.setBounds(0, 56, 1280, 664);
+const createPhysics = () => {
+  const ph = new ArcadePhysics(config);
+  ph.world.setBounds(0, 56, 1280, 664);
+  return ph;
+};
 
 let ballSprite;
-const createBall = () => {
+const createBall = (physics) => {
   const size = 75;
   const ball = physics.add.body(
     config.width / 2 - size / 2,
@@ -32,8 +35,7 @@ const createBall = () => {
 };
 // set colliders on ball
 
-const playersSprites = [];
-const createPlayerSprite = (x, y) => {
+const createPlayerSprite = (x, y, physics) => {
   const size = 90;
   const body = physics.add.body(x, y, size, size);
   body.setCollideWorldBounds();
@@ -47,13 +49,8 @@ const createPlayerSprite = (x, y) => {
   physics.add.collider(ballSprite, body);
   physics.add.collider(body, ballSprite);
 
-  playersSprites.forEach((p, i) => {
-    physics.add.collider(body, playersSprites[i]);
-  });
-  playersSprites.push(body);
-
   return body;
 };
 // set colliders on players
 
-export { physics, createBall, createPlayerSprite };
+export { createBall, createPlayerSprite, createPhysics };
