@@ -16,7 +16,7 @@ const createPhysics = () => {
 };
 
 let ballSprite;
-const createBall = (physics) => {
+const createBall = (physics, goalCallback) => {
   const size = 75;
   const ball = physics.add.body(
     config.width / 2 - size / 2,
@@ -31,9 +31,15 @@ const createBall = (physics) => {
   ball.setDamping(true);
   ball.setDrag(0.7);
   ballSprite = ball;
+
+  const goalA = physics.add.body(16, 268, 56, 240);
+  const goalB = physics.add.body(1207, 268, 56, 240);
+
+  physics.add.overlap(ball, goalA, () => goalCallback("A"));
+  physics.add.overlap(ball, goalB, () => goalCallback("B"));
+
   return ball;
 };
-// set colliders on ball
 
 const createPlayerSprite = (x, y, physics) => {
   const size = 90;
@@ -51,6 +57,5 @@ const createPlayerSprite = (x, y, physics) => {
 
   return body;
 };
-// set colliders on players
 
 export { createBall, createPlayerSprite, createPhysics };

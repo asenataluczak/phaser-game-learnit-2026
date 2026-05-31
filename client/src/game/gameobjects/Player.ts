@@ -11,12 +11,16 @@ export class Player extends Physics.Arcade.Image {
     dx: number;
     dy: number;
 
+    team: 1 | 2;
+    isHost: boolean;
+
     constructor(
         scene: Phaser.Scene,
         x: number,
         y: number,
         isCurrentUser: boolean,
         team: 1 | 2,
+        isHost: boolean,
     ) {
         super(scene, x, y, 'player');
 
@@ -27,6 +31,8 @@ export class Player extends Physics.Arcade.Image {
         if (isCurrentUser) {
             this.setTint(0x0088aa);
         }
+        this.team = team;
+        this.isHost = isHost;
 
         this.setCollideWorldBounds();
 

@@ -9,6 +9,8 @@ import { unpack } from 'msgpackr';
 const SIM_DT_MS = 15;
 const INTERP_DELAY_MS = 100; // adjust based on network conditions
 
+const GAME_TIMEOUT = 10;
+
 export class MainScene extends Scene {
     keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
 
@@ -19,7 +21,7 @@ export class MainScene extends Scene {
     scoreA: number = 0;
     scoreB: number = 0;
     canScoreIncrease: boolean = true;
-    gameOverTimeoutInSeconds: number = 180;
+    gameOverTimeoutInSeconds: number = GAME_TIMEOUT;
 
     otherPlayersData: Array<Player> = [];
     currentUserIndex: number;
@@ -40,6 +42,8 @@ export class MainScene extends Scene {
 
     players: any;
 
+    timer: any;
+
     constructor() {
         super('MainScene');
     }
@@ -52,6 +56,12 @@ export class MainScene extends Scene {
         this.players = this.physics.add.group();
 
         this.socket = socket;
+
+        this.socket.on('GAME_RESET', (initialGameData: any) => {
+            this.hudScene.scene.restart();
+            this.localPlayerSprite.setInteractive();
+            this.scene.resume();
+        });
 
         this.initialGameData = this.game.registry.get('initialGameData');
         this.currentUserIndex = this.game.registry.get('currentUserIndex');
@@ -76,14 +86,10 @@ export class MainScene extends Scene {
                 this.initialGameData.p[i].y,
                 isCurrentUser,
                 player.team,
+                player.host,
             );
             if (isCurrentUser) {
                 this.localPlayerSprite = playerSprite;
-                console.log(
-                    'CURRENT USER SPRITE',
-                    this.localPlayerSprite,
-                    this.initialGameData.p,
-                );
             }
             this.players.add(playerSprite);
             this.allPlayerSprites.push(playerSprite);
@@ -94,11 +100,22 @@ export class MainScene extends Scene {
         this.scene.resume();
 
         this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
+            if (!this.gameOverTimeoutInSeconds) return;
+
             this.snapshots.push({
                 ...unpack(snapshot),
                 recvClientTime: performance.now(),
             });
             if (this.snapshots.length > 30) this.snapshots.shift();
+        });
+
+        this.socket.on('SCORE_UPDATE', (score: any) => {
+            const scoreForTeam = score.A > this.scoreA ? 1 : 2;
+            this.scoreA = score.A;
+            this.scoreB = score.B;
+            this.localPlayerSprite.disableInteractive();
+            this.updateHudScore(scoreForTeam);
+            this.resetAfterGoal();
         });
 
         // local state + pending inputs
@@ -122,33 +139,27 @@ export class MainScene extends Scene {
             .setVisible(false);
         goalB.refreshBody();
 
-        this.physics.add.overlap(this.ball, goalA, () => {
-            if (!this.canScoreIncrease) return;
-            this.scoreA++;
+        // this.physics.add.overlap(this.ball, goalA, () => {
+        //     if (!this.canScoreIncrease) return;
+        //     this.scoreA++;
 
-            this.updateScore();
-            this.resetAfterGoal();
-        });
-        this.physics.add.overlap(this.ball, goalB, () => {
-            if (!this.canScoreIncrease) return;
-            this.scoreB++;
+        //     this.resetAfterGoal();
+        // });
+        // this.physics.add.overlap(this.ball, goalB, () => {
+        //     if (!this.canScoreIncrease) return;
+        //     this.scoreB++;
 
-            this.updateScore();
-            this.resetAfterGoal();
-        });
+        //     this.resetAfterGoal();
+        // });
 
         this.scene.launch('HudScene');
         this.hudScene = this.scene.get('HudScene') as HudScene;
-        this.time.addEvent({
+        this.timer = this.time.addEvent({
             delay: 1000,
             loop: true,
             callback: () => {
                 if (this.gameOverTimeoutInSeconds === 0) {
-                    this.game.events.removeListener('start-game');
-
-                    // TODO: implement game over logic
-                    console.log(`Score: ${this.scoreA} : ${this.scoreB}`);
-                    this.scene.pause();
+                    this.handleGameOver();
                 } else {
                     this.gameOverTimeoutInSeconds--;
                     this.hudScene.updateRemainingTime(
@@ -271,18 +282,46 @@ export class MainScene extends Scene {
         });
     }
 
-    private updateScore() {
-        this.canScoreIncrease = false;
+    private handleGameOver() {
+        this.timer.pause = true;
+        this.game.events.removeListener('start-game');
+
+        let canPress = true;
+        this.hudScene.showGameOverScreen(
+            this.scoreA,
+            this.scoreB,
+            this.localPlayerSprite.isHost,
+            () => {
+                if (!canPress) return;
+                this.socket.emit('START_GAME', {
+                    gameId: this.initialGameData.gameId,
+                    reset: true,
+                });
+                canPress = false;
+                this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
+            },
+        );
+        this.scene.pause();
+    }
+
+    private updateHudScore(team: 1 | 2) {
         this.hudScene.updateScore(this.scoreA, this.scoreB);
+
+        if (this.localPlayerSprite.team === team) {
+            this.cameras.main.fadeIn(4000, 8, 80, 0);
+        } else {
+            this.cameras.main.fadeIn(4000, 80, 8, 0);
+        }
     }
 
     private resetAfterGoal() {
         this.time.addEvent({
-            delay: 2000,
+            delay: 3000,
             callback: () => {
-                this.ball.setPosition(500, 300);
-                this.ball.body.stop();
-                this.canScoreIncrease = true;
+                this.localPlayerSprite.setInteractive();
+                this.socket.emit('START_GAME', {
+                    gameId: this.initialGameData.gameId,
+                });
             },
         });
     }

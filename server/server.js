@@ -70,6 +70,7 @@ io.on("connection", (socket) => {
       playerSpriteList: [],
       ballSprite: null,
       physics: null,
+      score: { A: 0, B: 0 },
     });
   }
 
@@ -92,23 +93,32 @@ io.on("connection", (socket) => {
     gameId: gameId,
   });
 
-  socket.on("START_GAME", ({ gameId }) => {
+  socket.on("START_GAME", ({ gameId, reset = false }) => {
     if (!gameId) return;
-    lobbies.get(gameId).physics = createPhysics();
-    const usersInTheRoom = lobbies.get(gameId).players;
+    const lobby = lobbies.get(gameId);
+    lobby.physics = createPhysics();
+    const usersInTheRoom = lobby.players;
     const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
     const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
 
-    lobbies.get(gameId).ballSprite = createBall(lobbies.get(gameId).physics);
+    let canScoreIncrease = true;
+    lobby.ballSprite = createBall(lobby.physics, (team) => {
+      if (!canScoreIncrease) return;
+      lobby.score[team]++;
+      io.sockets.to(gameId).emit("SCORE_UPDATE", {
+        ...lobby.score,
+      });
+      canScoreIncrease = false;
+    });
     const playerSpriteList = [];
     playersTeamA.forEach((p, i) => {
       const sprite = createPlayerSprite(
         ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
-        lobbies.get(gameId).physics,
+        lobby.physics,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {
-          lobbies.get(gameId).physics.add.collider(sprite, playerSpriteList[i]);
+          lobby.physics.add.collider(sprite, playerSpriteList[i]);
         });
       }
       playerSpriteList.push(sprite);
@@ -116,41 +126,46 @@ io.on("connection", (socket) => {
     playersTeamB.forEach((p, i) => {
       const sprite = createPlayerSprite(
         ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
-        lobbies.get(gameId).physics,
+        lobby.physics,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {
-          lobbies.get(gameId).physics.add.collider(sprite, playerSpriteList[i]);
+          lobby.physics.add.collider(sprite, playerSpriteList[i]);
         });
       }
       playerSpriteList.push(sprite);
     });
 
-    lobbies.get(gameId).playerSpriteList = [...playerSpriteList];
+    lobby.playerSpriteList = [...playerSpriteList];
 
     const SIM_DT_MS = 15;
     const UPDATE_DT_MS = 45;
 
-    io.sockets.to(gameId).emit("GAME_STARTED", {
-      ...getSnapshotOfLobby(lobbies.get(gameId)),
-      players: lobbies.get(gameId).players,
+    if (reset) {
+      lobby.score = { A: 0, B: 0 };
+    }
+
+    io.sockets.to(gameId).emit(reset ? "GAME_RESET" : "GAME_STARTED", {
+      ...getSnapshotOfLobby(lobby),
+      players: lobby.players,
+      gameId,
     });
 
     let simTime = 0;
-    setInterval(() => {
+    const physicsInterval = setInterval(() => {
       simTime++;
-      lobbies.get(gameId).physics.world.update(simTime, SIM_DT_MS);
+      lobby.physics.world.update(simTime, SIM_DT_MS);
     }, SIM_DT_MS);
 
-    setInterval(() => {
-      const snapshot = getSnapshotOfLobby(lobbies.get(gameId));
-      const anyMovement =
-        lobbies.get(gameId).ballSprite.speed > 3 ||
-        lobbies.get(gameId).playerSpriteList.some((p) => p.speed > 3);
-      if (anyMovement) {
-        io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
-      }
+    const snapshotInterval = setInterval(() => {
+      const snapshot = getSnapshotOfLobby(lobby);
+      io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
     }, UPDATE_DT_MS);
+
+    socket.on("GAME_OVER", () => {
+      clearInterval(physicsInterval);
+      clearInterval(snapshotInterval);
+    });
   });
 
   socket.on("INPUT", (cmd, playerIndex) => {
