@@ -22,7 +22,7 @@ const httpsServer = isProd
 const io = new Server(httpsServer, {
   cors: {
     origin: isProd
-      ? "https://ankara-messi.asenata.dev"
+      ? "https://ankara-messi.asenata.dev/socket.io"
       : "http://localhost:4200",
   },
 });
