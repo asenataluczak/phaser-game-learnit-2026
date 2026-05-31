@@ -12,18 +12,14 @@ const INTERP_DELAY_MS = 100; // adjust based on network conditions
 const GAME_TIMEOUT = 20;
 
 export class MainScene extends Scene {
-    keyObjects: Record<string, Phaser.Input.Keyboard.Key> = {};
-
     localPlayerSprite: Player;
     ball: Ball;
     allPlayerSprites: Array<Player> = [];
 
     scoreA: number = 0;
     scoreB: number = 0;
-    canScoreIncrease: boolean = true;
     gameOverTimeoutInSeconds: number = GAME_TIMEOUT;
 
-    otherPlayersData: Array<Player> = [];
     currentUserIndex: number;
 
     initialGameData: any;
@@ -36,12 +32,6 @@ export class MainScene extends Scene {
 
     accumMs = 0;
 
-    inputSeq = 0;
-    pendingInputs: Array<any> = [];
-    localState = { x: 0, y: 0 }; // initialize when you get initial spawn
-
-    players: any;
-
     timer: any;
 
     constructor() {
@@ -52,8 +42,6 @@ export class MainScene extends Scene {
         this.add.image(0, 0, 'field').setOrigin(0, 0);
         this.scene.pause();
         this.physics.world.setBounds(0, 56, 1280, 664);
-
-        this.players = this.physics.add.group();
 
         this.socket = socket;
 
@@ -71,9 +59,7 @@ export class MainScene extends Scene {
             this.initialGameData,
             this.currentUserIndex,
         );
-        this.otherPlayersData = this.initialGameData.players.filter(
-            (_: any, i: number) => i !== this.currentUserIndex,
-        );
+
         this.ball = new Ball(
             this,
             this.initialGameData.b.x,
@@ -92,11 +78,7 @@ export class MainScene extends Scene {
             if (isCurrentUser) {
                 this.localPlayerSprite = playerSprite;
             }
-            this.players.add(playerSprite);
             this.allPlayerSprites.push(playerSprite);
-
-            this.physics.add.collider(this.players, this.players);
-            this.physics.add.collider(playerSprite, this.ball);
         });
         this.scene.resume();
 
@@ -119,14 +101,6 @@ export class MainScene extends Scene {
             this.resetAfterGoal();
         });
 
-        // local state + pending inputs
-        this.inputSeq = 0;
-        this.pendingInputs = [];
-        this.localState = {
-            x: this.localPlayerSprite.x,
-            y: this.localPlayerSprite.y,
-        };
-
         const goalA = this.physics.add
             .staticImage(16, 268, 'goal')
             .setOrigin(0, 0)
@@ -139,19 +113,6 @@ export class MainScene extends Scene {
             .setDisplaySize(56, 240)
             .setVisible(false);
         goalB.refreshBody();
-
-        // this.physics.add.overlap(this.ball, goalA, () => {
-        //     if (!this.canScoreIncrease) return;
-        //     this.scoreA++;
-
-        //     this.resetAfterGoal();
-        // });
-        // this.physics.add.overlap(this.ball, goalB, () => {
-        //     if (!this.canScoreIncrease) return;
-        //     this.scoreB++;
-
-        //     this.resetAfterGoal();
-        // });
 
         this.scene.launch('HudScene');
         this.hudScene = this.scene.get('HudScene') as HudScene;
@@ -180,17 +141,9 @@ export class MainScene extends Scene {
         }
         // 2) Render/interpolate server-authoritative objects (ball + other players)
         this.interpolateSnapshotPositions();
-
-        // 3) Render local player sprite from predicted localState (if predicting)
-        // this.localPlayerSprite.setPosition(
-        //         this.localState.x,
-        //         this.localState.y,
-        //     );
     }
 
     fixedPredictTick() {
-        // 1) read input
-        // 2) apply same deterministic movement locally (client prediction)
         if (this.localPlayerSprite.isLoadingKick) {
             this.localPlayerSprite.loadKick(
                 this.input.activePointer.worldX,
@@ -202,27 +155,13 @@ export class MainScene extends Scene {
             this.localPlayerSprite.isLoadingKick &&
             !this.input.activePointer.isDown
         ) {
-            const kickDir = this.localPlayerSprite.kick();
-            const cmd = {
-                seq: ++this.inputSeq,
-                ...kickDir,
-            };
-            this.localState.x = this.localPlayerSprite.x;
-            this.localState.y = this.localPlayerSprite.y;
-            // this.localPlayerSprite.setPosition(
-            //     this.localState.x,
-            //     this.localState.y,
-            // );
+            const cmd = this.localPlayerSprite.kick();
 
-            if (cmd.dir) {
+            if (cmd?.dir) {
                 console.log('EMIT KICK', cmd, this.currentUserIndex);
                 this.socket.emit('INPUT', cmd, this.currentUserIndex);
-                this.pendingInputs.push(cmd);
             }
         }
-
-        // 3) send input cmd to server (NOT position)
-        // 4) store cmd in pendingInputs for reconciliation (requires server ack)
     }
 
     interpolateSnapshotPositions() {
