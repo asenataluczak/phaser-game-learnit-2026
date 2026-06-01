@@ -46,9 +46,11 @@ export class MainScene extends Scene {
         this.socket = socket;
 
         this.socket.on('GAME_RESET', (initialGameData: any) => {
-            this.hudScene.scene.restart();
             this.localPlayerSprite.setInteractive();
-            this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
+            if (!this.gameOverTimeoutInSeconds) {
+                this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
+                this.hudScene.scene.restart();
+            }
             this.scene.resume();
         });
 
@@ -261,6 +263,7 @@ export class MainScene extends Scene {
                 this.localPlayerSprite.setInteractive();
                 this.socket.emit('START_GAME', {
                     gameId: this.initialGameData.gameId,
+                    reset: true,
                 });
             },
         });
