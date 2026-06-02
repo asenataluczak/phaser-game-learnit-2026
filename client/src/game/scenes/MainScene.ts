@@ -9,7 +9,7 @@ import { unpack } from 'msgpackr';
 const SIM_DT_MS = 15;
 const INTERP_DELAY_MS = 100; // adjust based on network conditions
 
-const GAME_TIMEOUT = 20;
+const GAME_TIMEOUT = 180;
 
 export class MainScene extends Scene {
     localPlayerSprite: Player;
