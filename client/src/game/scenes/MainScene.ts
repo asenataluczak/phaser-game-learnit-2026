@@ -30,8 +30,6 @@ export class MainScene extends Scene {
 
     snapshots: Array<any> = [];
 
-    accumMs = 0;
-
     timer: any;
 
     constructor() {
@@ -134,18 +132,18 @@ export class MainScene extends Scene {
         });
     }
 
+    accumMs = 0;
     override update(time: number, delta: number) {
-        // 1) Fixed-step prediction loop (optional, for local player responsiveness)
         this.accumMs += delta;
         while (this.accumMs >= SIM_DT_MS) {
-            this.fixedPredictTick();
+            this.inputTick();
             this.accumMs -= SIM_DT_MS;
         }
-        // 2) Render/interpolate server-authoritative objects (ball + other players)
+
         this.interpolateSnapshotPositions();
     }
 
-    fixedPredictTick() {
+    inputTick() {
         if (this.localPlayerSprite.isLoadingKick) {
             this.localPlayerSprite.loadKick(
                 this.input.activePointer.worldX,
@@ -193,7 +191,6 @@ export class MainScene extends Scene {
             (renderTime - a.recvClientTime) /
             (b.recvClientTime - a.recvClientTime);
 
-        // Ball interpolation
         const ax = a.b.x;
         const ay = a.b.y;
         const bx = b.b.x;
@@ -203,8 +200,6 @@ export class MainScene extends Scene {
             Phaser.Math.Linear(ay, by, t),
         );
 
-        // Remote players interpolation (by id)
-        // ... find matching player in a & b, then Linear(x), Linear(y), set sprite position ...
         this.allPlayerSprites.forEach((player: any, i: number) => {
             const ax = a.p[i].x;
             const ay = a.p[i].y;
