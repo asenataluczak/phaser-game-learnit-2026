@@ -74,6 +74,7 @@ export class MainScene extends Scene {
                 isCurrentUser,
                 player.team,
                 player.host,
+                player.name,
             );
             if (isCurrentUser) {
                 this.localPlayerSprite = playerSprite;
@@ -206,13 +207,13 @@ export class MainScene extends Scene {
             const bx = b.p[i].x;
             const by = b.p[i].y;
             if (i === this.currentUserIndex) {
-                this.localPlayerSprite.setPosition(
+                this.localPlayerSprite.updatePosition(
                     Phaser.Math.Linear(ax, bx, t),
                     Phaser.Math.Linear(ay, by, t),
                 );
             }
 
-            this.allPlayerSprites[i].setPosition(
+            this.allPlayerSprites[i].updatePosition(
                 Phaser.Math.Linear(ax, bx, t),
                 Phaser.Math.Linear(ay, by, t),
             );

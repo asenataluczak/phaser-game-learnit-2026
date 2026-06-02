@@ -14,6 +14,8 @@ export class Player extends Physics.Arcade.Image {
     team: 1 | 2;
     isHost: boolean;
 
+    nameText: GameObjects.Text;
+
     constructor(
         scene: Phaser.Scene,
         x: number,
@@ -21,12 +23,23 @@ export class Player extends Physics.Arcade.Image {
         isCurrentUser: boolean,
         team: 1 | 2,
         isHost: boolean,
+        name: string,
     ) {
         super(scene, x, y, 'player');
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.debugGfx = this.scene.add.graphics();
+
+        this.nameText = this.scene.add
+            .text(this.x, this.y, name, {
+                fontSize: '14px',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 3,
+            })
+            .setOrigin(0.5, 1)
+            .setDepth(1000);
 
         if (isCurrentUser) {
             this.setTint(0x0088aa);
@@ -116,6 +129,11 @@ export class Player extends Physics.Arcade.Image {
             type: 'kick',
             dir: { x: dirX, y: dirY },
         };
+    }
+
+    updatePosition(x: number, y: number) {
+        this.setPosition(x, y);
+        this.nameText.setPosition(this.x, this.y);
     }
 
     move(direction: 'up' | 'down' | 'left' | 'right') {
