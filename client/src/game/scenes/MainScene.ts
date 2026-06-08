@@ -9,8 +9,6 @@ import { unpack } from 'msgpackr';
 const SIM_DT_MS = 15;
 const INTERP_DELAY_MS = 100; // adjust based on network conditions
 
-const GAME_TIMEOUT = 180;
-
 export class MainScene extends Scene {
     localPlayerSprite: Player;
     ball: Ball;
@@ -18,7 +16,6 @@ export class MainScene extends Scene {
 
     scoreA: number = 0;
     scoreB: number = 0;
-    gameOverTimeoutInSeconds: number = GAME_TIMEOUT;
 
     currentUserIndex: number;
 
@@ -29,8 +26,6 @@ export class MainScene extends Scene {
     socket: any;
 
     snapshots: Array<any> = [];
-
-    timer: any;
 
     constructor() {
         super('MainScene');
@@ -43,13 +38,22 @@ export class MainScene extends Scene {
 
         this.socket = socket;
 
-        this.socket.on('GAME_RESET', (initialGameData: any) => {
+        this.socket.on('GAME_RESET', () => {
             this.localPlayerSprite.setInteractive();
-            if (!this.gameOverTimeoutInSeconds) {
-                this.gameOverTimeoutInSeconds = GAME_TIMEOUT;
-                this.hudScene.scene.restart();
-            }
+            this.hudScene.scene.restart();
             this.scene.resume();
+        });
+
+        this.socket.on('GOAL_RESET', () => {
+            this.localPlayerSprite.setInteractive();
+        });
+
+        this.socket.on('GAME_TIMEOUT_UPDATE', (remainingSeconds: number) => {
+            this.hudScene.updateRemainingTime(remainingSeconds);
+        });
+
+        this.socket.on('GAMEOVER', (remainingSeconds: number) => {
+            this.handleGameOver();
         });
 
         this.initialGameData = this.game.registry.get('initialGameData');
@@ -84,8 +88,6 @@ export class MainScene extends Scene {
         this.scene.resume();
 
         this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
-            if (!this.gameOverTimeoutInSeconds) return;
-
             this.snapshots.push({
                 ...unpack(snapshot),
                 recvClientTime: performance.now(),
@@ -99,7 +101,6 @@ export class MainScene extends Scene {
             this.scoreB = score.B;
             this.localPlayerSprite.disableInteractive();
             this.updateHudScore(scoreForTeam);
-            this.resetAfterGoal();
         });
 
         const goalA = this.physics.add
@@ -117,20 +118,6 @@ export class MainScene extends Scene {
 
         this.scene.launch('HudScene');
         this.hudScene = this.scene.get('HudScene') as HudScene;
-        this.timer = this.time.addEvent({
-            delay: 1000,
-            loop: true,
-            callback: () => {
-                if (this.gameOverTimeoutInSeconds === 0) {
-                    this.handleGameOver();
-                } else {
-                    this.gameOverTimeoutInSeconds--;
-                    this.hudScene.updateRemainingTime(
-                        this.gameOverTimeoutInSeconds,
-                    );
-                }
-            },
-        });
     }
 
     accumMs = 0;
@@ -230,14 +217,10 @@ export class MainScene extends Scene {
             this.localPlayerSprite.isHost,
             () => {
                 if (!canPress) return;
-                this.socket.emit('START_GAME', {
-                    gameId: this.initialGameData.gameId,
-                    reset: true,
-                });
+                this.socket.emit('RESTART_GAME', {});
                 canPress = false;
             },
         );
-        this.socket.emit('GAME_STOPPED');
         this.scene.pause();
     }
 
@@ -249,20 +232,5 @@ export class MainScene extends Scene {
         } else {
             this.cameras.main.fadeIn(4000, 80, 8, 0);
         }
-    }
-
-    private resetAfterGoal() {
-        this.timer.paused = true;
-        this.time.addEvent({
-            delay: 3000,
-            callback: () => {
-                this.localPlayerSprite.setInteractive();
-                this.socket.emit('START_GAME', {
-                    gameId: this.initialGameData.gameId,
-                    reset: true,
-                });
-                this.timer.paused = false;
-            },
-        });
     }
 }

@@ -16,14 +16,11 @@ const createPhysics = () => {
 };
 
 let ballSprite;
+const size = 75;
+const initialBallX = config.width / 2 - size / 2;
+const initialBallY = config.height / 2 + 56 - size + 10;
 const createBall = (physics, goalCallback) => {
-  const size = 75;
-  const ball = physics.add.body(
-    config.width / 2 - size / 2,
-    config.height / 2 + 56 - size + 10,
-    size,
-    size,
-  );
+  const ball = physics.add.body(initialBallX, initialBallY, size, size);
   ball.setCollideWorldBounds();
   ball.setCircle(size / 2);
   ball.setBounce(0.8, 0.8);
@@ -58,4 +55,10 @@ const createPlayerSprite = (x, y, physics) => {
   return body;
 };
 
-export { createBall, createPlayerSprite, createPhysics };
+export {
+  createBall,
+  createPlayerSprite,
+  createPhysics,
+  initialBallX,
+  initialBallY,
+};
