@@ -221,7 +221,6 @@ export class MainScene extends Scene {
     }
 
     private handleGameOver() {
-        this.timer.pause = true;
         this.game.events.removeListener('start-game');
 
         let canPress = true;
@@ -253,6 +252,7 @@ export class MainScene extends Scene {
     }
 
     private resetAfterGoal() {
+        this.timer.paused = true;
         this.time.addEvent({
             delay: 3000,
             callback: () => {
@@ -261,6 +261,7 @@ export class MainScene extends Scene {
                     gameId: this.initialGameData.gameId,
                     reset: true,
                 });
+                this.timer.paused = false;
             },
         });
     }
