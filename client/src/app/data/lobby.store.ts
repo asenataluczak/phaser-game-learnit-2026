@@ -68,12 +68,14 @@ export const LobbyStore = signalStore(
         createGame(name: string) {
             if (!socketService.socket?.connected) {
                 this.connectNewUser(name);
+                return;
             }
             socketService.emitCreateGame();
         },
         joinGame(name: string, gameId: string) {
             if (!socketService.socket?.connected) {
                 this.connectNewUser(name, gameId);
+                return;
             }
             socketService.emitJoinGame(gameId);
         },
@@ -125,7 +127,7 @@ export const LobbyStore = signalStore(
                 });
 
                 socket.gameInitialDataChange$.subscribe((snapshot) => {
-                    router.navigate(['/game', store.gameId()]);
+                    router.navigate(['/game', snapshot.gameId]);
 
                     patchState(store, {
                         initialGameData: snapshot,
@@ -148,12 +150,10 @@ export const LobbyStore = signalStore(
                         const userId = localStorage.getItem('USER_ID');
                         const username = localStorage.getItem('USER_NAME');
 
+                        patchState(store, {
+                            gameId,
+                        });
                         if (!userId || !username) {
-                            console.log(
-                                'navigated by router events',
-                                userId,
-                                username,
-                            );
                             router.navigateByUrl('/');
                             return;
                         }
@@ -164,7 +164,9 @@ export const LobbyStore = signalStore(
                                 name: username,
                             },
                         });
-                        socket.connect(username, userId, gameId);
+                        if (!socket.socket?.connected) {
+                            socket.connect(username, userId, gameId);
+                        }
                     });
             },
         }),

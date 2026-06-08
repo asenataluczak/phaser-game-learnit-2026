@@ -20,7 +20,7 @@ export class PhaserGame implements OnInit {
             const players = this.lobbyStore.playersInLobby();
             const currentUserIndex = this.lobbyStore
                 .initialGameData()
-                .players.findIndex(
+                ?.players?.findIndex(
                     (p: any) => p.id === this.lobbyStore.user()?.id,
                 );
             const initialGameData = this.lobbyStore.initialGameData();
@@ -28,9 +28,9 @@ export class PhaserGame implements OnInit {
             if (currentUserIndex >= 0 && players.length && initialGameData) {
                 this.game = StartGame(
                     'game-container',
-                    this.lobbyStore.playersInLobby(),
+                    players,
                     currentUserIndex,
-                    this.lobbyStore.initialGameData(),
+                    initialGameData,
                 );
             }
         });

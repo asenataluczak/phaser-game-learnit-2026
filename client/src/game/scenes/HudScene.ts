@@ -8,12 +8,18 @@ export class HudScene extends Scene {
         super('HudScene');
     }
 
-    create() {
+    create({ scoreA, scoreB, gameTimeout }: any) {
         this.add.bitmapText(290, 16, 'pixelfont', 'Team A', 32);
         this.add.bitmapText(830, 16, 'pixelfont', 'Team B', 32);
-        this.scoreText = this.add.bitmapText(580, 12, 'pixelfont', '0:0', 46);
+        this.scoreText = this.add.bitmapText(
+            580,
+            12,
+            'pixelfont',
+            `${scoreA}:${scoreB}`,
+            46,
+        );
         this.remainingTimeText = this.add
-            .bitmapText(this.scale.width - 10, 10, 'pixelfont', '- : -', 24)
+            .bitmapText(this.scale.width - 10, 10, 'pixelfont', this.getParsedTime(gameTimeout), 24)
             .setOrigin(1, 0);
     }
 
@@ -55,13 +61,12 @@ export class HudScene extends Scene {
     }
 
     updateRemainingTime(timeout: number) {
-        this.remainingTimeText.setText(
-            `${Math.floor(timeout / 60)
-                .toString()
-                .padStart(
-                    2,
-                    '0',
-                )}:${(timeout % 60).toString().padStart(2, '0')}`,
-        );
+        this.remainingTimeText.setText(this.getParsedTime(timeout));
+    }
+
+    private getParsedTime(timeout: number) {
+        return `${Math.floor(timeout / 60)
+            .toString()
+            .padStart(2, '0')}:${(timeout % 60).toString().padStart(2, '0')}`;
     }
 }
