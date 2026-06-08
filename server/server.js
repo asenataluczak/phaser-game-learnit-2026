@@ -4,7 +4,13 @@ import { readFileSync } from "fs";
 import * as https from "node:https";
 import * as http from "node:http";
 import { pack } from "msgpackr";
-import { createBall, createPlayerSprite, createPhysics } from "./physics.js";
+import {
+  createBall,
+  createPlayerSprite,
+  createPhysics,
+  initialBallX,
+  initialBallY,
+} from "./physics.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -56,6 +62,7 @@ const ensureLobby = (gameId) => {
       ballSprite: null,
       physics: null,
       score: { A: 0, B: 0 },
+      canScoreIncrease: true,
     });
   }
   return lobbies.get(gameId);
@@ -75,6 +82,7 @@ const removeUserFromLobby = (gameId, userId) => {
   lobby.players = lobby.players.filter((p) => p.id !== userId);
 
   if (!lobby.players.length) {
+    clearIntervalsForLobby(lobby);
     lobbies.delete(gameId);
   } else {
     // If the host left, make the first player the new host.
@@ -125,7 +133,6 @@ io.use((socket, next) => {
 });
 io.on("connection", (socket) => {
   const { username, userId, gameId: _gameId } = socket.handshake.query;
-  console.log(socket.handshake.query);
 
   socket.data.userId = userId.toString();
   socket.data.username = username.toString();
@@ -161,85 +168,72 @@ io.on("connection", (socket) => {
     socket.emit("GAME_ID_ASSIGNED", { gameId });
   });
 
-  socket.on(
-    "START_GAME",
-    ({ gameId: gameIdFromPayload, reset = false } = {}) => {
-      const gameId = socket.data.gameId || gameIdFromPayload;
-      if (!gameId || !lobbies.has(gameId)) return;
+  socket.on("START_GAME", ({ gameId: gameIdFromPayload } = {}) => {
+    const gameId = socket.data.gameId || gameIdFromPayload;
+    if (!gameId || !lobbies.has(gameId)) return;
 
-      const lobby = lobbies.get(gameId);
-      lobby.physics = createPhysics();
-      const usersInTheRoom = lobby.players;
-      const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
-      const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
+    const lobby = lobbies.get(gameId);
+    lobby.physics = createPhysics();
+    const usersInTheRoom = lobby.players;
+    const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
+    const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
 
-      let canScoreIncrease = true;
-      lobby.ballSprite = createBall(lobby.physics, (team) => {
-        if (!canScoreIncrease) return;
-        lobby.score[team]++;
-        io.sockets.to(gameId).emit("SCORE_UPDATE", {
-          ...lobby.score,
+    lobby.ballSprite = createBall(lobby.physics, (team) => {
+      if (!lobby.canScoreIncrease) return;
+      lobby.score[team]++;
+      io.sockets.to(gameId).emit("SCORE_UPDATE", {
+        ...lobby.score,
+      });
+      resetAfterGoal(lobby, gameId);
+      lobby.canScoreIncrease = false;
+    });
+    const playerSpriteList = [];
+    playersTeamA.forEach((p, i) => {
+      const sprite = createPlayerSprite(
+        ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
+        lobby.physics,
+      );
+      if (playerSpriteList.length) {
+        playerSpriteList.forEach((p, i) => {
+          lobby.physics.add.collider(sprite, playerSpriteList[i]);
         });
-        canScoreIncrease = false;
-      });
-      const playerSpriteList = [];
-      playersTeamA.forEach((p, i) => {
-        const sprite = createPlayerSprite(
-          ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
-          lobby.physics,
-        );
-        if (playerSpriteList.length) {
-          playerSpriteList.forEach((p, i) => {
-            lobby.physics.add.collider(sprite, playerSpriteList[i]);
-          });
-        }
-        playerSpriteList.push(sprite);
-      });
-      playersTeamB.forEach((p, i) => {
-        const sprite = createPlayerSprite(
-          ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
-          lobby.physics,
-        );
-        if (playerSpriteList.length) {
-          playerSpriteList.forEach((p, i) => {
-            lobby.physics.add.collider(sprite, playerSpriteList[i]);
-          });
-        }
-        playerSpriteList.push(sprite);
-      });
-
-      lobby.playerSpriteList = [...playerSpriteList];
-
-      const SIM_DT_MS = 15;
-      const UPDATE_DT_MS = 45;
-
-      if (reset) {
-        lobby.score = { A: 0, B: 0 };
       }
+      playerSpriteList.push(sprite);
+    });
+    playersTeamB.forEach((p, i) => {
+      const sprite = createPlayerSprite(
+        ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
+        lobby.physics,
+      );
+      if (playerSpriteList.length) {
+        playerSpriteList.forEach((p, i) => {
+          lobby.physics.add.collider(sprite, playerSpriteList[i]);
+        });
+      }
+      playerSpriteList.push(sprite);
+    });
 
-      io.sockets.to(gameId).emit(reset ? "GAME_RESET" : "GAME_STARTED", {
-        ...getSnapshotOfLobby(lobby),
-        players: lobby.players,
-        gameId,
-      });
+    lobby.playerSpriteList = [...playerSpriteList];
 
-      let simTime = 0;
-      const physicsInterval = setInterval(() => {
-        simTime++;
-        lobby.physics.world.update(simTime, SIM_DT_MS);
-      }, SIM_DT_MS);
+    io.sockets.to(gameId).emit("GAME_STARTED", {
+      ...getSnapshotOfLobby(lobby),
+      players: lobby.players,
+      gameId,
+    });
 
-      const snapshotInterval = setInterval(() => {
-        const snapshot = getSnapshotOfLobby(lobby);
-        io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
-      }, UPDATE_DT_MS);
+    setIntervalsForLobby(lobby, gameId);
 
-      socket.on("GAME_STOPPED", () => {
-        clearInterval(physicsInterval);
-        clearInterval(snapshotInterval);
-      });
-    },
-  );
+    socket.on("RESTART_GAME", () => {
+      lobby.score = { A: 0, B: 0 };
+      resetPositions(lobby);
+      setIntervalsForLobby(lobby, gameId);
+      io.sockets.to(gameId).emit("GAME_RESET", {});
+    });
+
+    socket.on("GAME_STOPPED", () => {
+      clearIntervalsForLobby(lobby);
+    });
+  });
 
   socket.on("INPUT", (cmd, playerIndex) => {
     const gameId = socket.data.gameId;
@@ -278,3 +272,70 @@ const getSnapshotOfLobby = (lobby) => ({
     y: parseFloat(lobby.ballSprite.y.toFixed(2)),
   },
 });
+
+const GOAL_TIMEOUT_MS = 3000;
+const resetAfterGoal = (lobby, gameId) => {
+  setTimeout(() => {
+    resetPositions(lobby);
+    io.sockets.to(gameId).emit("GOAL_RESET", {
+      ...getSnapshotOfLobby(lobby),
+      players: lobby.players,
+      gameId: lobby.gameId,
+    });
+    lobby.canScoreIncrease = true;
+  }, GOAL_TIMEOUT_MS);
+};
+
+const SIM_DT_MS = 15;
+const UPDATE_DT_MS = 45;
+const GAME_TIMEOUT_S = 20;
+const setIntervalsForLobby = (lobby, gameId) => {
+  let simTime = 0;
+  lobby.physicsInterval = setInterval(() => {
+    simTime++;
+    lobby.physics.world.update(simTime, SIM_DT_MS);
+  }, SIM_DT_MS);
+
+  lobby.snapshotInterval = setInterval(() => {
+    const snapshot = getSnapshotOfLobby(lobby);
+    io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
+  }, UPDATE_DT_MS);
+
+  let gameTimeout = GAME_TIMEOUT_S;
+  lobby.gameTimeInterval = setInterval(() => {
+    if (!lobby.canScoreIncrease) return;
+    if (gameTimeout === 0) {
+      handleGameOver(lobby, gameId);
+    } else {
+      gameTimeout--;
+      io.sockets.to(gameId).emit("GAME_TIMEOUT_UPDATE", gameTimeout);
+    }
+  }, 1000);
+};
+
+const handleGameOver = (lobby, gameId) => {
+  clearIntervalsForLobby(lobby);
+  io.sockets.to(gameId).emit("GAMEOVER");
+};
+
+const clearIntervalsForLobby = (lobby) => {
+  clearInterval(lobby.physicsInterval);
+  clearInterval(lobby.snapshotInterval);
+  clearInterval(lobby.gameTimeInterval);
+};
+
+const resetPositions = (lobby) => {
+  lobby.playerSpriteList.forEach((sprite, index) => {
+    const initialPositions = [
+      ...INITIAL_POSITIONS_TEAM_A,
+      ...INITIAL_POSITIONS_TEAM_B,
+    ];
+    const initialPosition = initialPositions[index];
+    lobby.playerSpriteList[index].x = initialPosition.x;
+    lobby.playerSpriteList[index].y = initialPosition.y;
+    lobby.playerSpriteList[index].setVelocity(0, 0);
+  });
+  lobby.ballSprite.x = initialBallX;
+  lobby.ballSprite.y = initialBallY;
+  lobby.ballSprite.setVelocity(0, 0);
+};
