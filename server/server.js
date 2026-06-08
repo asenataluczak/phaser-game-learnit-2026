@@ -54,6 +54,8 @@ const INITIAL_POSITIONS_TEAM_B = [
 const lobbies = new Map();
 const userSockets = new Map();
 
+const GAME_TIMEOUT_S = 20;
+
 const ensureLobby = (gameId) => {
   if (!lobbies.has(gameId)) {
     lobbies.set(gameId, {
@@ -63,6 +65,7 @@ const ensureLobby = (gameId) => {
       physics: null,
       score: { A: 0, B: 0 },
       canScoreIncrease: true,
+      gameTimeout: GAME_TIMEOUT_S,
     });
   }
   return lobbies.get(gameId);
@@ -115,6 +118,16 @@ const joinLobby = (socket, gameId) => {
       gameId,
       team: getCalculatedTeam(gameId),
       host: !lobby.players.length,
+    });
+  }
+  if (lobby.gameInProgress && userAlreadyInLobby) {
+    socket.emit("GAME_STARTED", {
+      ...getSnapshotOfLobby(lobby),
+      players: lobby.players,
+      score: lobby.score,
+      gameTimeout: lobby.gameTimeout,
+      gameInProgress: lobby.gameInProgress,
+      gameId,
     });
   }
 
@@ -173,6 +186,7 @@ io.on("connection", (socket) => {
     if (!gameId || !lobbies.has(gameId)) return;
 
     const lobby = lobbies.get(gameId);
+    lobby.gameInProgress = true;
     lobby.physics = createPhysics();
     const usersInTheRoom = lobby.players;
     const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
@@ -218,6 +232,7 @@ io.on("connection", (socket) => {
     io.sockets.to(gameId).emit("GAME_STARTED", {
       ...getSnapshotOfLobby(lobby),
       players: lobby.players,
+      gameTimeout: lobby.gameTimeout,
       gameId,
     });
 
@@ -232,6 +247,7 @@ io.on("connection", (socket) => {
 
     socket.on("GAME_STOPPED", () => {
       clearIntervalsForLobby(lobby);
+      lobby.gameInProgress = false;
     });
   });
 
@@ -245,13 +261,15 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", (reason) => {
     if (userSockets.get(socket.data.userId) !== socket.id) return;
-
-    console.log("DISCONNECTED", socket.id, reason);
-    userSockets.delete(socket.data.userId);
-
     const gameId = socket.data.gameId;
-    removeUserFromLobby(gameId, socket.data.userId);
-    emitUsersInLobbyChange(gameId);
+    const lobby = lobbies.get(gameId);
+    const user = lobby?.players.find((p) => p.id === socket.data.userId);
+    if (!lobby?.gameInProgress && !user?.host) {
+      console.log("DISCONNECTED", socket.id, reason, userSockets.size);
+      userSockets.delete(socket.data.userId);
+      removeUserFromLobby(gameId, socket.data.userId);
+      emitUsersInLobbyChange(gameId);
+    }
   });
 });
 
@@ -288,7 +306,6 @@ const resetAfterGoal = (lobby, gameId) => {
 
 const SIM_DT_MS = 15;
 const UPDATE_DT_MS = 45;
-const GAME_TIMEOUT_S = 20;
 const setIntervalsForLobby = (lobby, gameId) => {
   let simTime = 0;
   lobby.physicsInterval = setInterval(() => {
@@ -301,14 +318,13 @@ const setIntervalsForLobby = (lobby, gameId) => {
     io.sockets.to(gameId).emit("SNAPSHOT_UPDATE", pack(snapshot));
   }, UPDATE_DT_MS);
 
-  let gameTimeout = GAME_TIMEOUT_S;
   lobby.gameTimeInterval = setInterval(() => {
     if (!lobby.canScoreIncrease) return;
-    if (gameTimeout === 0) {
+    if (lobby.gameTimeout === 0) {
       handleGameOver(lobby, gameId);
     } else {
-      gameTimeout--;
-      io.sockets.to(gameId).emit("GAME_TIMEOUT_UPDATE", gameTimeout);
+      lobby.gameTimeout--;
+      io.sockets.to(gameId).emit("GAME_TIMEOUT_UPDATE", lobby.gameTimeout);
     }
   }, 1000);
 };
