@@ -38,10 +38,10 @@ httpsServer.listen({ port: 3000 }, () => {
 });
 
 const INITIAL_POSITIONS_TEAM_A = [
-  { x: 1280 / 2 - 190, y: 720 / 2 - 56 + 45 - 10},
-  { x: 1280 / 10, y: 720 / 2 - 56 + 45 - 10},
+  { x: 1280 / 2 - 190, y: 720 / 2 - 56 + 45 - 10 },
+  { x: 1280 / 10, y: 720 / 2 - 56 + 45 - 10 },
   { x: 1280 / 2 - 135, y: 720 / 5 },
-  { x: 1280 / 2 - 135, y: 720 - 720 / 5 - 56},
+  { x: 1280 / 2 - 135, y: 720 - 720 / 5 - 56 },
 ];
 
 const INITIAL_POSITIONS_TEAM_B = [
@@ -55,7 +55,7 @@ const lobbies = new Map();
 const userSockets = new Map();
 const disconnectTimers = new Map();
 
-const GAME_TIMEOUT_S = 2;
+const GAME_TIMEOUT_S = 30;
 
 const ensureLobby = (gameId) => {
   if (!lobbies.has(gameId)) {
@@ -216,7 +216,7 @@ io.on("connection", (socket) => {
     const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
     const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
 
-    lobby.ballSprite = createBall(lobby.physics, (team) => {
+    lobby.ballSprite = createBall(lobby, (team) => {
       if (!lobby.canScoreIncrease) return;
       lobby.score[team]++;
       io.sockets.to(gameId).emit("SCORE_UPDATE", {
@@ -228,9 +228,15 @@ io.on("connection", (socket) => {
     const playerSpriteList = [];
     playersTeamA.forEach((p, i) => {
       const sprite = createPlayerSprite(
-        // ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),        
-        ...Object.values(INITIAL_POSITIONS_TEAM_A[Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_A.length)]),
+        // ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
+        ...Object.values(
+          INITIAL_POSITIONS_TEAM_A[
+            Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_A.length)
+          ],
+        ),
         lobby.physics,
+        lobby.ballSprite,
+        lobby.corners,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {
@@ -242,8 +248,14 @@ io.on("connection", (socket) => {
     playersTeamB.forEach((p, i) => {
       const sprite = createPlayerSprite(
         // ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
-        ...Object.values(INITIAL_POSITIONS_TEAM_B[Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_B.length)]),
+        ...Object.values(
+          INITIAL_POSITIONS_TEAM_B[
+            Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_B.length)
+          ],
+        ),
         lobby.physics,
+        lobby.ballSprite,
+        lobby.corners,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {
@@ -391,7 +403,6 @@ const clearIntervalsForLobby = (lobby) => {
 
 // Koniec wersji z pozycjami jedna po drugiej
 
-
 // Wesja z losowymi pozycjami
 
 const shuffleArray = (array) => {
@@ -408,8 +419,14 @@ const resetPositions = (lobby) => {
   const shuffledB = shuffleArray(INITIAL_POSITIONS_TEAM_B);
 
   lobby.playerSpriteList.forEach((sprite, index) => {
-    lobby.playerSpriteList[index].x = index % 2 === 0 ? shuffledA[index % shuffledA.length].x : shuffledB[index % shuffledB.length].x;
-    lobby.playerSpriteList[index].y = index % 2 === 0 ? shuffledA[index % shuffledA.length].y : shuffledB[index % shuffledB.length].y;
+    lobby.playerSpriteList[index].x =
+      index % 2 === 0
+        ? shuffledA[index % shuffledA.length].x
+        : shuffledB[index % shuffledB.length].x;
+    lobby.playerSpriteList[index].y =
+      index % 2 === 0
+        ? shuffledA[index % shuffledA.length].y
+        : shuffledB[index % shuffledB.length].y;
     lobby.playerSpriteList[index].setVelocity(0, 0);
   });
   lobby.ballSprite.x = initialBallX;

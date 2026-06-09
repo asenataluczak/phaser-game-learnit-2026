@@ -9,7 +9,7 @@ export class Ball extends Physics.Arcade.Image {
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
 
-        const size = 75;
+        const size = 55;
         this.setCollideWorldBounds();
         this.setDisplaySize(size, size);
         this.setOrigin(0, 0);
