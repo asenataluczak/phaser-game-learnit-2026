@@ -229,6 +229,7 @@ io.on("connection", (socket) => {
       const sprite = createPlayerSprite(
         ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
         lobby.physics,
+        lobby.ballSprite,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {
@@ -241,6 +242,7 @@ io.on("connection", (socket) => {
       const sprite = createPlayerSprite(
         ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
         lobby.physics,
+        lobby.ballSprite,
       );
       if (playerSpriteList.length) {
         playerSpriteList.forEach((p, i) => {

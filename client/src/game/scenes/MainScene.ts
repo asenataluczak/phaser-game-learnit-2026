@@ -32,9 +32,9 @@ export class MainScene extends Scene {
     }
 
     create() {
-        this.add.image(0, 0, 'field').setOrigin(0, 0);
+        this.add.image(0, 56, 'field').setOrigin(0, 0);
         this.scene.pause();
-        this.physics.world.setBounds(0, 56, 1280, 664);
+        this.physics.world.setBounds(0, 82, 1280, 612);
 
         this.socket = socket;
 
@@ -108,16 +108,13 @@ export class MainScene extends Scene {
         });
 
         const goalA = this.physics.add
-            .staticImage(16, 268, 'goal')
+            .staticImage(0, 301, 'goal')
             .setOrigin(0, 0)
-            .setDisplaySize(56, 240)
-            .setVisible(false);
+            .setFlipX(true);
         goalA.refreshBody();
         const goalB = this.physics.add
-            .staticImage(1207, 268, 'goal')
-            .setOrigin(0, 0)
-            .setDisplaySize(56, 240)
-            .setVisible(false);
+            .staticImage(1190, 301, 'goal')
+            .setOrigin(0, 0);
         goalB.refreshBody();
 
         this.scene.launch('HudScene', {
