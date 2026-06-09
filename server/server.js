@@ -53,6 +53,7 @@ const INITIAL_POSITIONS_TEAM_B = [
 
 const lobbies = new Map();
 const userSockets = new Map();
+const disconnectTimers = new Map();
 
 const GAME_TIMEOUT_S = 20;
 
@@ -98,19 +99,23 @@ const joinLobby = (socket, gameId) => {
   const { userId, username } = socket.data;
   if (!userId || !username) return;
 
-  const prevGameId = socket.data.gameId;
+  const prevGameId = userSockets.get(socket.data.userId).gameId;
   if (prevGameId && prevGameId !== gameId) {
     socket.leave(prevGameId);
     removeUserFromLobby(prevGameId, userId);
     emitUsersInLobbyChange(prevGameId);
   }
 
-  socket.data.gameId = gameId;
+  userSockets.get(socket.data.userId).gameId = gameId;
   socket.join(gameId);
 
   const lobby = ensureLobby(gameId);
 
   const userAlreadyInLobby = lobby.players.find((p) => p.id === userId);
+  if (lobby.gameInProgress && !userAlreadyInLobby) {
+    socket.disconnect(true);
+    return;
+  }
   if (!userAlreadyInLobby) {
     lobby.players.push({
       id: userId,
@@ -150,19 +155,37 @@ io.on("connection", (socket) => {
   socket.data.userId = userId.toString();
   socket.data.username = username.toString();
 
+  const timer = disconnectTimers.get(socket.data.userId);
+  if (timer) {
+    clearTimeout(timer);
+    disconnectTimers.delete(socket.data.userId);
+  }
+
   // Enforce 1 active socket per userId.
   const existingSocketId = userSockets.get(socket.data.userId);
-  if (existingSocketId && existingSocketId !== socket.id) {
-    const existingSocket = io.sockets.sockets.get(existingSocketId);
+  if (existingSocketId && existingSocketId.socketId !== socket.id) {
+    const existingSocket = io.sockets.sockets.get(existingSocketId.socketId);
     existingSocket?.disconnect(true);
   }
-  userSockets.set(socket.data.userId, socket.id);
+  userSockets.set(socket.data.userId, {
+    ...existingSocketId,
+    socketId: socket.id,
+  });
+
+  const userSocket = userSockets.get(socket.data.userId);
 
   console.log("New connection:", {
     username: socket.data.username,
     userId: socket.data.userId,
     _gameId,
+    lobbies: lobbies.size,
+    userSockets: userSockets.size,
   });
+
+  if (_gameId && _gameId.toString() && !lobbies.has(_gameId.toString())) {
+    socket.disconnect(true);
+    return;
+  }
 
   const initialGameId = (_gameId && _gameId.toString()) || nanoid(6);
   joinLobby(socket, initialGameId);
@@ -182,7 +205,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("START_GAME", ({ gameId: gameIdFromPayload } = {}) => {
-    const gameId = socket.data.gameId || gameIdFromPayload;
+    const gameId = userSocket?.gameId || gameIdFromPayload;
     if (!gameId || !lobbies.has(gameId)) return;
 
     const lobby = lobbies.get(gameId);
@@ -233,6 +256,8 @@ io.on("connection", (socket) => {
       ...getSnapshotOfLobby(lobby),
       players: lobby.players,
       gameTimeout: lobby.gameTimeout,
+      gameInProgress: lobby.gameInProgress,
+      score: lobby.score,
       gameId,
     });
 
@@ -254,7 +279,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("INPUT", (cmd, playerIndex) => {
-    const gameId = socket.data.gameId;
+    const gameId = userSocket?.gameId;
     if (!gameId || !lobbies.has(gameId)) return;
     const lobby = lobbies.get(gameId);
     if (!lobby.playerSpriteList[playerIndex]) return;
@@ -262,16 +287,21 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", (reason) => {
-    if (userSockets.get(socket.data.userId) !== socket.id) return;
-    const gameId = socket.data.gameId;
-    const lobby = lobbies.get(gameId);
-    const user = lobby?.players.find((p) => p.id === socket.data.userId);
-    if (!lobby?.gameInProgress && !user?.host) {
-      console.log("DISCONNECTED", socket.id, reason, userSockets.size);
-      userSockets.delete(socket.data.userId);
-      removeUserFromLobby(gameId, socket.data.userId);
+    if (userSocket?.socketId !== socket.id) return;
+
+    const userId = socket.data.userId;
+    const gameId = userSocket?.gameId;
+    const timer = setTimeout(() => {
+      const lobby = lobbies.get(gameId);
+
+      userSockets.delete(userId);
+      removeUserFromLobby(gameId, userId);
       emitUsersInLobbyChange(gameId);
-    }
+
+      disconnectTimers.delete(userId);
+    }, 3000);
+
+    disconnectTimers.set(userId, timer);
   });
 });
 
