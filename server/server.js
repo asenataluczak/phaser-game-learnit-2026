@@ -38,24 +38,24 @@ httpsServer.listen({ port: 3000 }, () => {
 });
 
 const INITIAL_POSITIONS_TEAM_A = [
-  { x: 100, y: 100 },
-  { x: 200, y: 200 },
-  { x: 300, y: 300 },
-  { x: 200, y: 400 },
+  { x: 1280 / 2 - 190, y: 720 / 2 - 56 + 45 - 10},
+  { x: 1280 / 10, y: 720 / 2 - 56 + 45 - 10},
+  { x: 1280 / 2 - 135, y: 720 / 5 },
+  { x: 1280 / 2 - 135, y: 720 - 720 / 5 - 56},
 ];
 
 const INITIAL_POSITIONS_TEAM_B = [
-  { x: 500, y: 400 },
-  { x: 600, y: 500 },
-  { x: 400, y: 300 },
-  { x: 350, y: 200 },
+  { x: 1280 / 2 + 100, y: 720 / 2 - 56 + 45 - 10 },
+  { x: 1280 - 218, y: 720 / 2 - 56 + 45 - 10 },
+  { x: 1280 / 2 + 45, y: 720 / 5 },
+  { x: 1280 / 2 + 45, y: 720 - 720 / 5 - 56 },
 ];
 
 const lobbies = new Map();
 const userSockets = new Map();
 const disconnectTimers = new Map();
 
-const GAME_TIMEOUT_S = 20;
+const GAME_TIMEOUT_S = 2;
 
 const ensureLobby = (gameId) => {
   if (!lobbies.has(gameId)) {
@@ -67,6 +67,7 @@ const ensureLobby = (gameId) => {
       score: { A: 0, B: 0 },
       canScoreIncrease: true,
       gameTimeout: GAME_TIMEOUT_S,
+      resetCount: 0,
     });
   }
   return lobbies.get(gameId);
@@ -227,7 +228,8 @@ io.on("connection", (socket) => {
     const playerSpriteList = [];
     playersTeamA.forEach((p, i) => {
       const sprite = createPlayerSprite(
-        ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
+        // ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),        
+        ...Object.values(INITIAL_POSITIONS_TEAM_A[Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_A.length)]),
         lobby.physics,
       );
       if (playerSpriteList.length) {
@@ -239,7 +241,8 @@ io.on("connection", (socket) => {
     });
     playersTeamB.forEach((p, i) => {
       const sprite = createPlayerSprite(
-        ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
+        // ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
+        ...Object.values(INITIAL_POSITIONS_TEAM_B[Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_B.length)]),
         lobby.physics,
       );
       if (playerSpriteList.length) {
@@ -372,18 +375,46 @@ const clearIntervalsForLobby = (lobby) => {
   clearInterval(lobby.gameTimeInterval);
 };
 
+// Wersja z pozycjami jedna po drugiej
+
+// const resetPositions = (lobby) => {
+//   lobby.resetCount = (lobby.resetCount || 0) + 1;
+//   lobby.playerSpriteList.forEach((sprite, index) => {
+//     lobby.playerSpriteList[index].x = index % 2 === 0 ? INITIAL_POSITIONS_TEAM_A[lobby.resetCount % INITIAL_POSITIONS_TEAM_A.length].x : INITIAL_POSITIONS_TEAM_B[lobby.resetCount % INITIAL_POSITIONS_TEAM_B.length].x;
+//     lobby.playerSpriteList[index].y = index % 2 === 0 ? INITIAL_POSITIONS_TEAM_A[lobby.resetCount % INITIAL_POSITIONS_TEAM_A.length].y : INITIAL_POSITIONS_TEAM_B[lobby.resetCount % INITIAL_POSITIONS_TEAM_B.length].y;
+//     lobby.playerSpriteList[index].setVelocity(0, 0);
+//   });
+//   lobby.ballSprite.x = initialBallX;
+//   lobby.ballSprite.y = initialBallY;
+//   lobby.ballSprite.setVelocity(0, 0);
+// };
+
+// Koniec wersji z pozycjami jedna po drugiej
+
+
+// Wesja z losowymi pozycjami
+
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const resetPositions = (lobby) => {
+  const shuffledA = shuffleArray(INITIAL_POSITIONS_TEAM_A);
+  const shuffledB = shuffleArray(INITIAL_POSITIONS_TEAM_B);
+
   lobby.playerSpriteList.forEach((sprite, index) => {
-    const initialPositions = [
-      ...INITIAL_POSITIONS_TEAM_A,
-      ...INITIAL_POSITIONS_TEAM_B,
-    ];
-    const initialPosition = initialPositions[index];
-    lobby.playerSpriteList[index].x = initialPosition.x;
-    lobby.playerSpriteList[index].y = initialPosition.y;
+    lobby.playerSpriteList[index].x = index % 2 === 0 ? shuffledA[index % shuffledA.length].x : shuffledB[index % shuffledB.length].x;
+    lobby.playerSpriteList[index].y = index % 2 === 0 ? shuffledA[index % shuffledA.length].y : shuffledB[index % shuffledB.length].y;
     lobby.playerSpriteList[index].setVelocity(0, 0);
   });
   lobby.ballSprite.x = initialBallX;
   lobby.ballSprite.y = initialBallY;
   lobby.ballSprite.setVelocity(0, 0);
 };
+
+// Koniec wersji z losowymi pozycjami
