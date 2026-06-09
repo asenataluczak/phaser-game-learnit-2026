@@ -20,6 +20,7 @@ interface LobbyState {
     player: Player | null;
     playersInLobby: Array<Player>;
     initialGameData: any;
+    connectionErrorMessage: string | null;
 }
 
 const initialState: LobbyState = {
@@ -28,6 +29,7 @@ const initialState: LobbyState = {
     player: null,
     playersInLobby: [],
     initialGameData: null,
+    connectionErrorMessage: null,
 };
 
 export const LobbyStore = signalStore(
@@ -79,6 +81,12 @@ export const LobbyStore = signalStore(
             }
             socketService.emitJoinGame(gameId);
         },
+        resetConnectionError() {
+            patchState(store, {
+                connectionErrorMessage: null,
+                gameId: null,
+            });
+        },
     })),
     withHooks(
         (store, router = inject(Router), socket = inject(SocketService)) => ({
@@ -114,23 +122,29 @@ export const LobbyStore = signalStore(
                 });
 
                 socket.gameIdChange$.subscribe((gameId) => {
-                    console.log('Game ID change received in store', gameId);
                     patchState(store, {
                         gameId,
                     });
                     if (gameId === 'undefined') return;
-                    if (gameId && window.location.href.includes('/game/'))
-                        return;
-                    if (gameId && !window.location.href.includes('/lobby/')) {
+                    if (gameId && !store.initialGameData()) {
                         router.navigate([`/lobby/${gameId}`]);
                     }
                 });
 
                 socket.gameInitialDataChange$.subscribe((snapshot) => {
-                    router.navigate(['/game', snapshot.gameId]);
+                    const path = snapshot.gameInProgress ? '/game' : '/lobby';
+                    router.navigate([path, snapshot.gameId]);
 
                     patchState(store, {
                         initialGameData: snapshot,
+                    });
+                });
+
+                socket.disconnected$.subscribe(() => {
+                    router.navigate(['/']);
+
+                    patchState(store, {
+                        connectionErrorMessage: 'Game in progress or does not exist',
                     });
                 });
 

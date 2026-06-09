@@ -90,7 +90,6 @@ export class MainScene extends Scene {
             }
             this.allPlayerSprites.push(playerSprite);
         });
-        this.scene.resume();
 
         this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
             this.snapshots.push({
@@ -130,6 +129,7 @@ export class MainScene extends Scene {
         if (this.initialGameData.gameTimeout === 0) {
             this.handleGameOver();
         }
+        this.scene.resume();
     }
 
     accumMs = 0;

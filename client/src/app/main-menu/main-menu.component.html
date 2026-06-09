@@ -32,6 +32,7 @@
                 type="text"
                 name="gameId"
                 placeholder="game ID"
+                [formControl]="gameIdInput"
                 [value]="lobbyStore.gameId() || ''"
             />
             <button
@@ -42,5 +43,10 @@
                 join
             </button>
         </div>
+        @if (lobbyStore.connectionErrorMessage()) {
+            <p class="text-red-500 mt-4">
+                {{ lobbyStore.connectionErrorMessage() }}
+            </p>
+        }
     </div>
 </div>

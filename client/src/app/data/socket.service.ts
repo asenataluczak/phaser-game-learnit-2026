@@ -17,6 +17,7 @@ export class SocketService {
     playersInLobbyChange$ = new Subject<Array<Player>>();
     gameInitialDataChange$ = new Subject<any>();
     gameIdChange$ = new Subject<string>();
+    disconnected$ = new Subject<any>();
 
     connect(playerName: string, userId: string, gameId?: string) {
         this.socket = io(environment.API_URL, {
@@ -35,7 +36,9 @@ export class SocketService {
         });
 
         this.socket.on('disconnect', (reason) => {
-            console.log('disconnected', reason);
+            if (reason === 'io server disconnect') {
+                this.disconnected$.next(reason);
+            }
         });
 
         this.socket.on('USERS_IN_LOBBY_CHANGE', (res) => {
