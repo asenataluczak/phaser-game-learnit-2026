@@ -12,10 +12,6 @@ const config = {
 const createPhysics = () => {
   const ph = new ArcadePhysics(config);
   ph.world.setBounds(0, 82, 1280, 612);
-  const corner1 = ph.add.body(1, 56, 86, 254);
-  const corner2 = ph.add.body(1193, 56, 86, 254);
-  const corner3 = ph.add.body(1193, 466, 86, 254);
-  const corner4 = ph.add.body(1, 466, 86, 254);
   return ph;
 };
 
@@ -26,11 +22,11 @@ const createFakeWalls = (physics) => {
   const corner4 = physics.add.body(1, 466, 86, 254);
 };
 
-const size = 75;
+const size = 55;
 const initialBallX = config.width / 2 - size / 2;
-const initialBallY = config.height / 2 + 56 - size + 10;
-const createBall = (physics, goalCallback) => {
-  const ball = physics.add.body(initialBallX, initialBallY, size, size);
+const initialBallY = config.height / 2 + 56 - size;
+const createBall = (lobby, goalCallback) => {
+  const ball = lobby.physics.add.body(initialBallX, initialBallY, size, size);
   ball.setCollideWorldBounds();
   ball.setCircle(size / 2);
   ball.setBounce(0.8, 0.8);
@@ -38,24 +34,33 @@ const createBall = (physics, goalCallback) => {
   ball.setDamping(true);
   ball.setDrag(0.7);
 
-  const goalA = physics.add.body(16, 268, 56, 240);
-  const goalB = physics.add.body(1207, 268, 56, 240);
+  const goalA = lobby.physics.add.body(1, 310, 86, 156);
+  const goalB = lobby.physics.add.body(1190, 310, 86, 156);
 
-  physics.add.overlap(ball, goalA, () => goalCallback("A"));
-  physics.add.overlap(ball, goalB, () => goalCallback("B"));
-  const corner1 = physics.add.body(1, 56, 86, 254);
-  const corner2 = physics.add.body(1193, 56, 86, 254);
-  const corner3 = physics.add.body(1193, 466, 86, 254);
-  const corner4 = physics.add.body(1, 466, 86, 254);
-  physics.add.collider(corner1, ball);
-  physics.add.collider(corner2, ball);
-  physics.add.collider(corner3, ball);
-  physics.add.collider(corner4, ball);
+  lobby.physics.add.overlap(ball, goalA, () => goalCallback("A"));
+  lobby.physics.add.overlap(ball, goalB, () => goalCallback("B"));
+
+  const cornerPositions = [
+    { x: 1, y: 56 },
+    { x: 1193, y: 56 },
+    { x: 1193, y: 466 },
+    { x: 1, y: 466 },
+  ];
+
+  lobby.corners = [];
+  cornerPositions.forEach((pos, index) => {
+    const corner = lobby.physics.add.body(pos.x, pos.y, 86, 254);
+    corner.pushable = false;
+    lobby.corners.push(corner);
+  });
+  lobby.corners.forEach((corner) => {
+    lobby.physics.add.collider(ball, corner);
+  });
 
   return ball;
 };
 
-const createPlayerSprite = (x, y, physics, ballSprite) => {
+const createPlayerSprite = (x, y, physics, ballSprite, corners) => {
   const size = 90;
   const body = physics.add.body(x, y, size, size);
   body.setCollideWorldBounds();
@@ -68,19 +73,9 @@ const createPlayerSprite = (x, y, physics, ballSprite) => {
 
   physics.add.collider(ballSprite, body);
   physics.add.collider(body, ballSprite);
-
-  // physics.add.collider(corner1, body);
-  // physics.add.collider(corner2, body);
-  // physics.add.collider(corner3, body);
-  // physics.add.collider(corner4, body);
-  // physics.add.collider(body, corner1);
-  // physics.add.collider(body, corner2);
-  // physics.add.collider(body, corner3);
-  // physics.add.collider(body, corner4);
-  // physics.add.collider(corner1, ballSprite);
-  // physics.add.collider(corner2, ballSprite);
-  // physics.add.collider(corner3, ballSprite);
-  // physics.add.collider(corner4, ballSprite);
+  corners.forEach((corner) => {
+    physics.add.collider(body, corner);
+  });
 
   return body;
 };
