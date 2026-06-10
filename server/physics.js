@@ -3,6 +3,10 @@ import { ArcadePhysics } from "arcade-physics";
 const config = {
   width: 1280,
   height: 720,
+  max: {
+    width: 1280,
+    height: 720,
+  },
   gravity: {
     x: 0,
     y: 0,

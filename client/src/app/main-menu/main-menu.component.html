@@ -1,14 +1,12 @@
-<div id="menu" class="menu flex">
-    <h1 class="text-[60px] font-bold uppercase">
-        <span>Game</span>
-    </h1>
+<div id="menu" class="menu center max-w-dvw mt-24 sm:mt-32">
+    <h1 class="text-[60px] lit-font text-center">Play<span class="text-lit">IT</span></h1>
 
-    <div class="min-w-[400px]">
+    <div class="mt-10 sm:max-w-[500px] sm:px-10 px-2 mx-auto">
         <input
             #name
             id="playerNameInput"
             type="text"
-            class="mb-8 rounded-lg"
+            class="mb-12 rounded-lg"
             placeholder="your name"
             [value]="lobbyStore.user()?.name || ''"
         />
@@ -22,7 +20,7 @@
             create
         </button>
 
-        <p class="text-center text-xl my-2">or</p>
+        <p class="text-center text-xl my-4">or</p>
 
         <div class="flex">
             <input

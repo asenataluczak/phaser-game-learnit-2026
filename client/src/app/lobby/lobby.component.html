@@ -1,31 +1,41 @@
-<div id="lobby" class="lobby">
-    <p class="text-xl font-bold">
-        <span>game id: </span>
-        <span id="gameIdTextSlot" class="ml-4">{{ lobbyStore.gameId() }}</span>
+<div id="lobby" class="lobby max-w-dvw mt-24 sm:mt-32 sm:max-w-[700px] mx-auto">
+    <h1 class="text-[60px] lit-font text-center">
+        Play<span class="text-lit">IT</span>
+    </h1>
+    <p class="mt-6 mb-8 text-l text-center w-fit mx-auto">
+        <span class="lit-font py-2">GAME ID: </span>
+        <span
+            class="ml-4 font-bold tracking-wider border-2 border-lit py-2 px-6 rounded-md"
+            >{{ lobbyStore.gameId() }}</span
+        >
     </p>
 
-    <div class="min-h-[300px] min-w-[500px] flex">
-        <div class="flex-1 text-center uppercase font-bold text-xl">
-            team a
+    <div class="min-h-[300px] w-full flex sm:px-10 px-2">
+        <div class="min-w-[100px] flex-1 text-center text-xl">
+            <span class="lit-font text-shadow-red-600 text-shadow-lg"
+                >TEAM A</span
+            >
             <ol class="mt-4">
                 @for (player of playersA(); track player.name) {
                     <li
-                        class="bg-[#0088aa] m-4 py-3 rounded-lg border-purple-500"
-                        [class.border-4]="player.id === lobbyStore.player()?.id"
+                        class="border-2 shadow-red-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-red-500"
+                        [class.bg-lit]="player.id === lobbyStore.player()?.id"
                     >
                         {{ player.host ? "👑" : "" }} {{ player.name }}
                     </li>
                 }
             </ol>
         </div>
-        <div class="w-2 bg-[#0088aa]"></div>
-        <div class="flex-1 text-center uppercase font-bold text-xl">
-            team b
+        <div class="w-1 bg-lit mt-10 rounded-md sm:mx-8"></div>
+        <div class="min-w-[100px] flex-1 text-center text-xl">
+            <span class="lit-font text-shadow-blue-600 text-shadow-lg"
+                >TEAM B</span
+            >
             <ol class="mt-4">
                 @for (player of playersB(); track player.name) {
                     <li
-                        class="bg-[#0088aa] m-4 py-3 rounded-lg border-purple-500"
-                        [class.border-4]="player.id === lobbyStore.player()?.id"
+                        class="border-2 bg-lit shadow-blue-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-blue-500"
+                        [class.bg-lit]="player.id === lobbyStore.player()?.id"
                     >
                         {{ player.name }}
                     </li>
@@ -35,11 +45,15 @@
     </div>
     @if (lobbyStore.player()?.host) {
         <button
-            class="btn btn-primary ml-auto"
+            class="btn btn-primary flex ml-auto mt-8 mb-4 mr-2"
             type="button"
             (click)="startGame()"
         >
             start game
         </button>
+    } @else {
+        <p class="italic text-right mt-8 text-gray-400">
+            Waiting for host to start the game...
+        </p>
     }
 </div>

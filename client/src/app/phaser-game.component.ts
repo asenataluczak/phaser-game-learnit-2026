@@ -6,7 +6,7 @@ import { LobbyStore } from './data/lobby.store';
 
 @Component({
     selector: 'phaser-game',
-    template: '<div id="game-container"></div>',
+    templateUrl: './phaser-game.component.html',
     standalone: true,
 })
 export class PhaserGame implements OnInit {
