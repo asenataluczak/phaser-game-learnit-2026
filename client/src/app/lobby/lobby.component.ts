@@ -1,11 +1,12 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Player } from '../utils/player.interface';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LobbyStore } from '../data/lobby.store';
 
 @Component({
     selector: 'app-lobby',
     templateUrl: './lobby.component.html',
+    imports: [RouterLink],
 })
 export class Lobby {
     private readonly router = inject(Router);

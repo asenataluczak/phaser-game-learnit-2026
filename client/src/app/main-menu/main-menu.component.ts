@@ -3,11 +3,12 @@ import { LobbyStore } from '../data/lobby.store';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/internal/operators/filter';
+import { RouterLink } from '@angular/router';
 
 @Component({
     selector: 'app-main-menu',
     templateUrl: './main-menu.component.html',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, RouterLink],
 })
 export class MainMenu implements OnInit {
     readonly lobbyStore = inject(LobbyStore);

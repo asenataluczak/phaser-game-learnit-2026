@@ -9,8 +9,12 @@ export class HudScene extends Scene {
     }
 
     create({ scoreA, scoreB, gameTimeout }: any) {
-        this.add.bitmapText(290, 16, 'pixelfont', 'Team A', 32);
-        this.add.bitmapText(830, 16, 'pixelfont', 'Team B', 32);
+        this.add
+            .bitmapText(290, 16, 'pixelfont', 'Team A', 32)
+            .setDropShadow(0, 4, 0xff0000, 0.8);
+        this.add
+            .bitmapText(830, 16, 'pixelfont', 'Team B', 32)
+            .setDropShadow(0, 4, 0x0000ff, 0.8);
         this.scoreText = this.add.bitmapText(
             580,
             12,
@@ -19,7 +23,13 @@ export class HudScene extends Scene {
             46,
         );
         this.remainingTimeText = this.add
-            .bitmapText(this.scale.width - 10, 10, 'pixelfont', this.getParsedTime(gameTimeout), 24)
+            .bitmapText(
+                this.scale.width - 10,
+                10,
+                'pixelfont',
+                this.getParsedTime(gameTimeout),
+                24,
+            )
             .setOrigin(1, 0);
     }
 

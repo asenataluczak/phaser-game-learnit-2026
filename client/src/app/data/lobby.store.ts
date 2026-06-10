@@ -144,7 +144,8 @@ export const LobbyStore = signalStore(
                     router.navigate(['/']);
 
                     patchState(store, {
-                        connectionErrorMessage: 'Game in progress or does not exist',
+                        connectionErrorMessage:
+                            'Game in progress or does not exist',
                     });
                 });
 
@@ -154,6 +155,15 @@ export const LobbyStore = signalStore(
                         const gameId = (route as ActivationEnd).snapshot.params[
                             'id'
                         ];
+
+                        if (
+                            store.initialGameData()?.gameInProgress &&
+                            !window.location.href.includes('/game/')
+                        ) {
+                            router.navigate([
+                                `/game/${store.initialGameData()?.gameId}`,
+                            ]);
+                        }
 
                         // TODO: resolve disconnection when game in progress
                         // if (!window.location.href.includes('/game/')) {

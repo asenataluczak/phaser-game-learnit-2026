@@ -3,11 +3,13 @@ import Phaser from 'phaser';
 import StartGame from '../game/main';
 import { EventBus } from '../game/EventBus';
 import { LobbyStore } from './data/lobby.store';
+import { RouterLink } from "@angular/router";
 
 @Component({
     selector: 'phaser-game',
     templateUrl: './phaser-game.component.html',
     standalone: true,
+    imports: [RouterLink],
 })
 export class PhaserGame implements OnInit {
     scene: Phaser.Scene;
