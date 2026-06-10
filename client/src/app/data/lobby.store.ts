@@ -155,9 +155,10 @@ export const LobbyStore = signalStore(
                             'id'
                         ];
 
-                        if (!window.location.href.includes('/game/')) {
-                            socket.emitGameStop();
-                        }
+                        // TODO: resolve disconnection when game in progress
+                        // if (!window.location.href.includes('/game/')) {
+                        //     socket.emitGameStop();
+                        // }
 
                         console.log('Route change, gameId:', gameId);
                         if (!gameId) return;
