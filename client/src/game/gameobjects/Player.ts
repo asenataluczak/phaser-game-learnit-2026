@@ -32,7 +32,7 @@ export class Player extends Physics.Arcade.Image {
         this.debugGfx = this.scene.add.graphics();
 
         this.nameText = this.scene.add
-            .text(this.x, this.y, name, {
+            .text(this.x, this.y, isHost ? `👑${name}` : name, {
                 fontSize: '14px',
                 color: '#ffffff',
                 stroke: '#000000',
