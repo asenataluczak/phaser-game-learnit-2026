@@ -219,15 +219,12 @@ export class MainScene extends Scene {
     private handleGameOver() {
         this.game.events.removeListener('start-game');
 
-        let canPress = true;
         this.hudScene.showGameOverScreen(
             this.scoreA,
             this.scoreB,
             this.localPlayerSprite.isHost,
             () => {
-                if (!canPress) return;
                 this.socket.emit('RESTART_GAME', {});
-                canPress = false;
             },
         );
         this.scene.pause();

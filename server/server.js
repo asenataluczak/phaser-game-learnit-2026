@@ -135,6 +135,9 @@ const joinLobby = (socket, gameId) => {
       gameInProgress: lobby.gameInProgress,
       gameId,
     });
+    if (!socket.listeners("RESTART_GAME").length) {
+      setListenersForGame(socket, lobby, gameId);
+    }
   }
 
   emitUsersInLobbyChange(gameId);
@@ -277,20 +280,7 @@ io.on("connection", (socket) => {
     });
 
     setIntervalsForLobby(lobby, gameId);
-
-    socket.on("RESTART_GAME", () => {
-      lobby.score = { A: 0, B: 0 };
-      lobby.gameInProgress = true;
-      lobby.gameTimeout = GAME_TIMEOUT_S;
-      resetPositions(lobby);
-      setIntervalsForLobby(lobby, gameId);
-      io.sockets.to(gameId).emit("GAME_RESET", {});
-    });
-
-    socket.on("GAME_STOPPED", () => {
-      clearIntervalsForLobby(lobby);
-      lobby.gameInProgress = false;
-    });
+    setListenersForGame(socket, lobby, gameId);
   });
 
   socket.on("INPUT", (cmd, playerIndex) => {
@@ -319,6 +309,24 @@ io.on("connection", (socket) => {
     disconnectTimers.set(userId, timer);
   });
 });
+
+const setListenersForGame = (socket, lobby, gameId) => {
+  socket.on("RESTART_GAME", () => {
+    if (lobby.gameTimeout > 0) return;
+    lobby.score = { A: 0, B: 0 };
+    lobby.gameInProgress = true;
+    lobby.gameTimeout = GAME_TIMEOUT_S;
+    resetPositions(lobby);
+    setIntervalsForLobby(lobby, gameId);
+    io.sockets.to(gameId).emit("GAME_RESET", {});
+  });
+
+  socket.on("GAME_STOPPED", () => {
+    console.log("GAME STOPPED");
+    clearIntervalsForLobby(lobby);
+    lobby.gameInProgress = false;
+  });
+};
 
 const getCalculatedTeam = (gameId) => {
   const usersInTheRoom = lobbies.get(gameId).players;
