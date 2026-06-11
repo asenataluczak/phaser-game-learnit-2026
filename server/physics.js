@@ -38,8 +38,8 @@ const createBall = (lobby, goalCallback) => {
   ball.setDamping(true);
   ball.setDrag(0.7);
 
-  const goalA = lobby.physics.add.body(1, 310, 86, 156);
-  const goalB = lobby.physics.add.body(1190, 310, 86, 156);
+  const goalB = lobby.physics.add.body(1, 310, 86, 156);
+  const goalA = lobby.physics.add.body(1190, 310, 86, 156);
 
   lobby.physics.add.overlap(ball, goalA, () => goalCallback("A"));
   lobby.physics.add.overlap(ball, goalB, () => goalCallback("B"));
