@@ -55,7 +55,7 @@ const lobbies = new Map();
 const userSockets = new Map();
 const disconnectTimers = new Map();
 
-const GAME_TIMEOUT_S = 30;
+const GAME_TIMEOUT_S = 60;
 
 const ensureLobby = (gameId) => {
   if (!lobbies.has(gameId)) {
