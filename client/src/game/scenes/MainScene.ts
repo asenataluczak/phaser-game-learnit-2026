@@ -90,6 +90,7 @@ export class MainScene extends Scene {
 
         this.socket.on('GOAL_RESET', () => {
             this.localPlayerSprite.setInteractive();
+            this.cameras.main.setAlpha(1);
         });
 
         this.socket.on('GAMEOVER', () => {
@@ -128,8 +129,11 @@ export class MainScene extends Scene {
         goalB.refreshBody();
 
         this.scene.resume();
+
         if (this.initialGameData.gameTimeout === 0) {
             this.handleGameOver();
+        } else {
+            this.cameras.main.fadeIn(1000, 23, 23, 23);
         }
     }
 
@@ -233,13 +237,9 @@ export class MainScene extends Scene {
     }
 
     private updateHudScore(team?: 1 | 2) {
-        this.hudScene.updateScore(this.scoreA, this.scoreB);
-
         if (!team) return;
-        if (this.localPlayerSprite.team === team) {
-            this.cameras.main.fadeIn(4000, 8, 80, 0);
-        } else {
-            this.cameras.main.fadeIn(4000, 80, 8, 0);
-        }
+        this.hudScene.updateScore(this.scoreA, this.scoreB, team);
+        this.cameras.main.shake(150, 0.01);
+        this.cameras.main.setAlpha(0.5);
     }
 }

@@ -51,9 +51,22 @@ export class HudScene extends Scene {
         g.fillRect(1030, 20, 250, 12);
     }
 
-    updateScore(scoreA: number, scoreB: number) {
-        this.scoreAText.setText(scoreA.toString());
-        this.scoreBText.setText(scoreB.toString());
+    updateScore(scoreA: number, scoreB: number, team: 1 | 2) {
+        const scoreText = team === 1 ? this.scoreAText : this.scoreBText;
+        const scoreCount = team === 1 ? scoreA : scoreB;
+        scoreText.setScale(1);
+
+        this.tweens.add({
+            targets: scoreText,
+            scaleX: 1.5,
+            scaleY: 1.5,
+            duration: 300,
+            ease: 'Quad.easeOut',
+            yoyo: true,
+            repeat: 1,
+        });
+
+        scoreText.setText(scoreCount.toString());
     }
 
     showGameOverScreen(
