@@ -30,7 +30,6 @@ export class SocketService {
             path: environment.API_PATH,
         });
         socket = this.socket;
-        console.log(this.socket);
 
         this.socket.on('connect', () => {
             console.log('Connected to Socket.IO server', this.socket.id);

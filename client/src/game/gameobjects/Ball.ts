@@ -5,6 +5,7 @@ export class Ball extends Physics.Arcade.Image {
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y, 'ball');
+        this.scene = scene;
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);

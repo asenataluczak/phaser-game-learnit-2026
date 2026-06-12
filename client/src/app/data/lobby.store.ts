@@ -122,17 +122,11 @@ export const LobbyStore = signalStore(
                 });
 
                 socket.playersInLobbyChange$.subscribe((players) => {
-                    console.log(players);
                     const currentUser = players.find(
                         (p: Player) => p.id === store.user()?.id,
                     );
 
                     if (!currentUser) {
-                        console.log(
-                            'Current user not found in lobby, navigating to main menu',
-                            currentUser,
-                            players,
-                        );
                         router.navigateByUrl('/');
                         return;
                     }

@@ -326,7 +326,12 @@ const setListenersForGame = (socket, lobby, gameId) => {
     lobby.gameTimeout = GAME_TIMEOUT_S;
     resetPositions(lobby);
     setIntervalsForLobby(lobby, gameId);
-    io.sockets.to(gameId).emit("GAME_RESET", {});
+    io.sockets
+      .to(gameId)
+      .emit("GAME_RESET", {
+        score: lobby.score,
+        gameTimeout: lobby.gameTimeout,
+      });
   });
 
   socket.on("END_GAME", () => {

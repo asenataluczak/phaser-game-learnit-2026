@@ -33,28 +33,13 @@ export class MainScene extends Scene {
 
     create() {
         this.add.image(0, 56, 'field').setOrigin(0, 0);
-        this.scene.pause();
+
+        if (!this.scene.isPaused()) {
+            this.scene.pause();
+        }
         this.physics.world.setBounds(0, 82, 1280, 612);
 
-        this.socket = socket;
-
-        this.socket.on('GAME_RESET', () => {
-            this.localPlayerSprite.setInteractive();
-            this.hudScene.scene.restart();
-            this.scene.resume();
-        });
-
-        this.socket.on('GOAL_RESET', () => {
-            this.localPlayerSprite.setInteractive();
-        });
-
-        this.socket.on('GAME_TIMEOUT_UPDATE', (remainingSeconds: number) => {
-            this.hudScene.updateRemainingTime(remainingSeconds);
-        });
-
-        this.socket.on('GAMEOVER', () => {
-            this.handleGameOver();
-        });
+        this.socket = this.game.registry.get('socket');
 
         this.initialGameData = this.game.registry.get('initialGameData');
         this.currentUserIndex = this.game.registry.get('currentUserIndex');
@@ -64,10 +49,14 @@ export class MainScene extends Scene {
             this.currentUserIndex,
         );
 
-        if (this.initialGameData.gameInProgress) {
-            this.scoreA = this.initialGameData.score.A;
-            this.scoreB = this.initialGameData.score.B;
-        }
+        this.scoreA = this.initialGameData.score.A;
+        this.scoreB = this.initialGameData.score.B;
+        this.scene.launch('HudScene', {
+            scoreA: this.scoreA,
+            scoreB: this.scoreB,
+            gameTimeout: this.initialGameData.gameTimeout,
+        });
+        this.hudScene = this.scene.get('HudScene') as HudScene;
 
         this.ball = new Ball(
             this,
@@ -89,6 +78,27 @@ export class MainScene extends Scene {
                 this.localPlayerSprite = playerSprite;
             }
             this.allPlayerSprites.push(playerSprite);
+        });
+
+        this.socket.on('GAME_RESET', (data: any) => {
+            this.scoreA = data.score.A;
+            this.scoreB = data.score.B;
+            this.scene.resume();
+            this.hudScene.scene.restart();
+            this.localPlayerSprite.setInteractive();
+        });
+
+        this.socket.on('GOAL_RESET', () => {
+            this.localPlayerSprite.setInteractive();
+        });
+
+        this.socket.on('GAMEOVER', () => {
+            this.handleGameOver();
+        });
+        this.socket.on('GAME_TIMEOUT_UPDATE', (remainingSeconds: number) => {
+            if (!!this.hudScene?.scene?.settings) {
+                this.hudScene.updateRemainingTime(remainingSeconds);
+            }
         });
 
         this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
@@ -117,16 +127,10 @@ export class MainScene extends Scene {
             .setOrigin(0, 0);
         goalB.refreshBody();
 
-        this.scene.launch('HudScene', {
-            scoreA: this.scoreA,
-            scoreB: this.scoreB,
-            gameTimeout: this.initialGameData.gameTimeout,
-        });
-        this.hudScene = this.scene.get('HudScene') as HudScene;
+        this.scene.resume();
         if (this.initialGameData.gameTimeout === 0) {
             this.handleGameOver();
         }
-        this.scene.resume();
     }
 
     accumMs = 0;
@@ -207,18 +211,16 @@ export class MainScene extends Scene {
                     Phaser.Math.Linear(ax, bx, t),
                     Phaser.Math.Linear(ay, by, t),
                 );
+            } else {
+                this.allPlayerSprites[i].updatePosition(
+                    Phaser.Math.Linear(ax, bx, t),
+                    Phaser.Math.Linear(ay, by, t),
+                );
             }
-
-            this.allPlayerSprites[i].updatePosition(
-                Phaser.Math.Linear(ax, bx, t),
-                Phaser.Math.Linear(ay, by, t),
-            );
         });
     }
 
     private handleGameOver() {
-        this.game.events.removeListener('start-game');
-
         this.hudScene.showGameOverScreen(
             this.scoreA,
             this.scoreB,
