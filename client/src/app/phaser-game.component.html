@@ -1,12 +1,19 @@
 <div class="absolute w-screen [@media(max-height:820px)]:hidden">
-    <div class="max-w-[1280px] mx-auto">
-        <h1
-            class="text-[40px] lit-font my-0 mx-2 [@media(max-height:820px)]:my-2"
-        >
+    <div class="mx-auto flex max-w-[1280px] my-2 items-center">
+        <h1 class="text-[40px] lit-font my-0 mx-2">
             <span [routerLink]="['/']" class="cursor-pointer">
                 Play<span class="text-lit">IT</span>
             </span>
         </h1>
+        @if (lobbyStore.isHost()) {
+            <button
+                class="ml-auto mx-2 btn btn-sm btn-secondary rounded-lg flex items-center"
+                type="button"
+                (click)="lobbyStore.endGame()"
+            >
+                <span class="text-2xl mr-2 mb-1">👑</span> End game
+            </button>
+        }
     </div>
 </div>
 

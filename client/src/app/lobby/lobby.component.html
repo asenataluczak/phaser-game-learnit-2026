@@ -1,14 +1,26 @@
 <div id="lobby" class="lobby max-w-dvw mt-24 sm:mt-32 sm:max-w-[700px] mx-auto">
     <h1 class="text-[60px] lit-font text-center">
-        <span [routerLink]="['/']" class="cursor-pointer"> Play<span class="text-lit">IT</span></span>
+        <span [routerLink]="['/']" class="cursor-pointer">
+            Play<span class="text-lit">IT</span></span
+        >
     </h1>
-    <p class="mt-6 mb-8 text-l text-center w-fit mx-auto">
+    <p class="mt-2 mb-16 text-l text-right w-fit ml-auto">
         <span class="lit-font py-2">GAME ID: </span>
         <span
             class="ml-4 font-bold tracking-wider border-2 border-lit py-2 px-6 rounded-md"
             >{{ lobbyStore.gameId() }}</span
         >
     </p>
+
+    @if (showInfoMessage()) {
+        <div class="absolute top-0 left-0 w-screen">
+            <p
+                class="sm:max-w-[700px] mx-auto mt-4 rounded-md p-6 bg-[rgba(0,136,1700,0.2)] border-2 border-lit bg-opacity-100"
+            >
+                {{ lobbyStore.connectionInfoMessage() }}
+            </p>
+        </div>
+    }
 
     <div class="min-h-[300px] w-full flex sm:px-10 px-2">
         <div class="min-w-[100px] flex-1 text-center text-xl">
@@ -37,23 +49,48 @@
                         class="border-2 bg-lit shadow-blue-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-blue-500"
                         [class.bg-lit]="player.id === lobbyStore.player()?.id"
                     >
-                        {{ player.name }}
+                        {{ player.host ? "👑" : "" }} {{ player.name }}
                     </li>
                 }
             </ol>
         </div>
     </div>
-    @if (lobbyStore.player()?.host) {
+
+    <div class="flex items-end justify-between sm:mx-14 mt-8 mb-4 mr-2">
         <button
-            class="btn btn-primary flex ml-auto mt-8 mb-4 mr-2"
+            class="btn btn-sm btn-secondary rounded-lg flex items-center"
             type="button"
-            (click)="startGame()"
+            (click)="lobbyStore.leaveGame()"
         >
-            start game
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-6 mr-2"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
+                />
+            </svg>
+
+            Leave
         </button>
-    } @else {
-        <p class="italic text-right mt-8 text-gray-400">
-            Waiting for host to start the game...
-        </p>
-    }
+        @if (lobbyStore.player()?.host) {
+            <button
+                class="btn btn-primary flex ml-4"
+                type="button"
+                (click)="startGame()"
+            >
+                start game
+            </button>
+        } @else {
+            <p class="italic text-right mt-8 text-gray-400">
+                Waiting for host to start the game...
+            </p>
+        }
+    </div>
 </div>
