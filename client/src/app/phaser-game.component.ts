@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import StartGame from '../game/main';
 import { EventBus } from '../game/EventBus';
 import { LobbyStore } from './data/lobby.store';
-import { RouterLink } from "@angular/router";
+import { RouterLink } from '@angular/router';
 
 @Component({
     selector: 'phaser-game',
@@ -15,7 +15,7 @@ export class PhaserGame implements OnInit {
     scene: Phaser.Scene;
     game: Phaser.Game;
     sceneCallback: (scene: Phaser.Scene) => void;
-    private lobbyStore = inject(LobbyStore);
+    lobbyStore = inject(LobbyStore);
 
     constructor() {
         effect(() => {
@@ -26,7 +26,6 @@ export class PhaserGame implements OnInit {
                     (p: any) => p.id === this.lobbyStore.user()?.id,
                 );
             const initialGameData = this.lobbyStore.initialGameData();
-            console.log(players, currentUserIndex, initialGameData);
             if (currentUserIndex >= 0 && players.length && initialGameData) {
                 this.game = StartGame(
                     'game-container',

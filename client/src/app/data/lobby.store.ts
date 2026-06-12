@@ -21,6 +21,7 @@ interface LobbyState {
     playersInLobby: Array<Player>;
     initialGameData: any;
     connectionErrorMessage: string | null;
+    connectionInfoMessage: string | null;
 }
 
 const initialState: LobbyState = {
@@ -30,6 +31,7 @@ const initialState: LobbyState = {
     playersInLobby: [],
     initialGameData: null,
     connectionErrorMessage: null,
+    connectionInfoMessage: null,
 };
 
 export const LobbyStore = signalStore(
@@ -37,11 +39,16 @@ export const LobbyStore = signalStore(
     withState<LobbyState>(initialState),
     withDevtools('lobby'),
     withComputed((store) => ({
-        isHost: computed(() => store.player()?.host),
         player: computed(() =>
             store
                 .playersInLobby()
                 .find((p: Player) => p.id === store.user()?.id),
+        ),
+        isHost: computed(
+            () =>
+                store
+                    .playersInLobby()
+                    .find((p: Player) => p.id === store.user()?.id)?.host,
         ),
     })),
     withMethods((store, socketService = inject(SocketService)) => ({
@@ -67,6 +74,15 @@ export const LobbyStore = signalStore(
         startGame() {
             socketService.emitStartGame(store.gameId() || '');
         },
+        leaveGame() {
+            socketService.emitLeaveGame(store.gameId() || '');
+            patchState(store, {
+                gameId: null,
+            });
+        },
+        endGame() {
+            socketService.emitEndGame(store.gameId() || '');
+        },
         createGame(name: string) {
             if (!socketService.socket?.connected) {
                 this.connectNewUser(name);
@@ -85,6 +101,11 @@ export const LobbyStore = signalStore(
             patchState(store, {
                 connectionErrorMessage: null,
                 gameId: null,
+            });
+        },
+        clearInfoMessage() {
+            patchState(store, {
+                connectionInfoMessage: null,
             });
         },
     })),
@@ -140,12 +161,23 @@ export const LobbyStore = signalStore(
                     });
                 });
 
+                socket.gameEnded$.subscribe(() => {
+                    router.navigate([`/lobby/${store.gameId()}`]);
+
+                    patchState(store, {
+                        initialGameData: null,
+                        connectionInfoMessage: 'Host stopped the game',
+                    });
+                });
+
                 socket.disconnected$.subscribe(() => {
                     router.navigate(['/']);
 
                     patchState(store, {
-                        connectionErrorMessage:
-                            'Game in progress or does not exist',
+                        connectionErrorMessage: store.gameId()
+                            ? 'Game in progress or does not exist'
+                            : null,
+                        gameId: null,
                     });
                 });
 
@@ -165,12 +197,6 @@ export const LobbyStore = signalStore(
                             ]);
                         }
 
-                        // TODO: resolve disconnection when game in progress
-                        // if (!window.location.href.includes('/game/')) {
-                        //     socket.emitGameStop();
-                        // }
-
-                        console.log('Route change, gameId:', gameId);
                         if (!gameId) return;
                         const userId = localStorage.getItem('USER_ID');
                         const username = localStorage.getItem('USER_NAME');

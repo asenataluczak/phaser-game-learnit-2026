@@ -208,6 +208,14 @@ io.on("connection", (socket) => {
     socket.emit("GAME_ID_ASSIGNED", { gameId });
   });
 
+  socket.on("LEAVE_GAME", ({ gameId }) => {
+    if (!gameId) return;
+    const lobby = lobbies.get(gameId);
+    removeUserFromLobby(gameId, userId);
+    emitUsersInLobbyChange(gameId);
+    socket.disconnect(true);
+  });
+
   socket.on("START_GAME", ({ gameId: gameIdFromPayload } = {}) => {
     const gameId = userSocket?.gameId || gameIdFromPayload;
     if (!gameId || !lobbies.has(gameId)) return;
@@ -321,10 +329,17 @@ const setListenersForGame = (socket, lobby, gameId) => {
     io.sockets.to(gameId).emit("GAME_RESET", {});
   });
 
-  socket.on("GAME_STOPPED", () => {
-    console.log("GAME STOPPED");
+  socket.on("END_GAME", () => {
     clearIntervalsForLobby(lobby);
     lobby.gameInProgress = false;
+    lobby.playerSpriteList = [];
+    lobby.ballSprite = null;
+    lobby.physics = null;
+    lobby.score = { A: 0, B: 0 };
+    lobby.canScoreIncrease = true;
+    lobby.gameTimeout = GAME_TIMEOUT_S;
+    lobby.resetCount = 0;
+    io.sockets.to(gameId).emit("GAME_ENDED", {});
   });
 };
 

@@ -9,8 +9,6 @@ import { LobbyStore } from '../data/lobby.store';
     imports: [RouterLink],
 })
 export class Lobby {
-    private readonly router = inject(Router);
-
     lobbyStore = inject(LobbyStore);
 
     playersA = computed(() =>
@@ -19,6 +17,20 @@ export class Lobby {
     playersB = computed(() =>
         this.lobbyStore.playersInLobby().filter((p: Player) => p.team === 2),
     );
+
+    showInfoMessage = signal(false);
+
+    infoMessageEffect = effect(() => {
+        const message = this.lobbyStore.connectionInfoMessage();
+        const isHost = this.lobbyStore.isHost();
+        if (message && !isHost) {
+            this.showInfoMessage.set(true);
+            setTimeout(() => {
+                this.showInfoMessage.set(false);
+                this.lobbyStore.clearInfoMessage();
+            }, 5000);
+        }
+    });
 
     startGame() {
         this.lobbyStore.startGame();
