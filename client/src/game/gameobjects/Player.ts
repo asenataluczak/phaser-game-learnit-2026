@@ -44,16 +44,13 @@ export class Player extends Physics.Arcade.Image {
             .setOrigin(0.5, 0.5)
             .setDepth(1000);
 
-        if (isCurrentUser) {
-            this.setTint(0x0088aa);
-        }
         this.team = team;
         this.isHost = isHost;
         this.isCurrentUser = isCurrentUser;
 
         this.team === 2 ? 
-            this.setTint(0x0088aa) : 
-            this.setTint(0xaa0000);
+            this.setTexture('player_blue') : 
+            this.setTexture('player');
 
         this.setCollideWorldBounds();
 
@@ -77,9 +74,7 @@ export class Player extends Physics.Arcade.Image {
     private drawPlayerBorder() {
         if (!this.isCurrentUser) return;
         
-        this.team === 2 ? 
-            this.playerBorderGfx.lineStyle(3, 0x80ccff, 1) : 
-            this.playerBorderGfx.lineStyle(3, 0xff3333, 1); 
+        this.playerBorderGfx.lineStyle(3, 0xffffff, 1); 
 
         this.playerBorderGfx.strokeCircle(
             this.body.center.x, 
