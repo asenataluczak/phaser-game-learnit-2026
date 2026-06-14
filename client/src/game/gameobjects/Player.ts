@@ -5,6 +5,7 @@ export class Player extends Physics.Arcade.Sprite {
     declare body: Physics.Arcade.Body;
 
     debugGfx: GameObjects.Graphics;
+    playerBorderGfx: GameObjects.Graphics;
 
     isLoadingKick: boolean = false;
     distance: number;
@@ -13,6 +14,7 @@ export class Player extends Physics.Arcade.Sprite {
 
     team: 1 | 2;
     isHost: boolean;
+    isCurrentUser: boolean;
 
     nameText: GameObjects.Text;
 
@@ -31,22 +33,25 @@ export class Player extends Physics.Arcade.Sprite {
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
         this.debugGfx = this.scene.add.graphics();
+        this.playerBorderGfx = this.scene.add.graphics();
 
         this.nameText = this.scene.add
-            .text(this.x, this.y, isHost ? `👑${name}` : name, {
+            .text(this.x + 90 / 2, this.y - 10, isHost ? `👑${name}` : name, {
                 fontSize: '14px',
                 color: '#ffffff',
                 stroke: '#000000',
                 strokeThickness: 3,
             })
-            .setOrigin(0.5, 1)
+            .setOrigin(0.5, 0.5)
             .setDepth(1000);
 
-        if (isCurrentUser) {
-            this.setTint(0x0088aa);
-        }
         this.team = team;
         this.isHost = isHost;
+        this.isCurrentUser = isCurrentUser;
+
+        this.team === 2 ? 
+            this.setTexture('player_blue') : 
+            this.setTexture('player');
 
         this.setCollideWorldBounds();
 
@@ -62,7 +67,21 @@ export class Player extends Physics.Arcade.Sprite {
         this.body.pushable = true;
         this.refreshBody();
 
+        this.drawPlayerBorder();
+
         this.listenForLoadingKick();
+    }
+
+    private drawPlayerBorder() {
+        if (!this.isCurrentUser) return;
+        
+        this.playerBorderGfx.lineStyle(3, 0xffffff, 1); 
+
+        this.playerBorderGfx.strokeCircle(
+            this.body.center.x, 
+            this.body.center.y, 
+            this.body.width / 2
+        );
     }
 
     loadKick(mx: number, my: number) {
@@ -94,6 +113,8 @@ export class Player extends Physics.Arcade.Sprite {
         }
 
         this.debugGfx.clear();
+
+        this.drawPlayerBorder();
         this.debugGfx.fillStyle(0xff0000, 1);
         this.debugGfx.fillCircle(mx, my, 5);
         this.debugGfx.fillCircle(borderX, borderY, 5);
@@ -108,6 +129,8 @@ export class Player extends Physics.Arcade.Sprite {
     kick() {
         this.debugGfx.clear();
         this.isLoadingKick = false;
+
+        this.drawPlayerBorder();
 
         if (!this.distance) {
             return;
@@ -134,7 +157,12 @@ export class Player extends Physics.Arcade.Sprite {
 
     updatePosition(x: number, y: number) {
         this.setPosition(x, y);
-        this.nameText.setPosition(this.x, this.y);
+        this.nameText.setPosition(this.x + 90 / 2, this.y - 10);
+
+        if (this.isCurrentUser) {
+            this.playerBorderGfx.clear();
+            this.drawPlayerBorder();
+        }
     }
 
     move(direction: 'up' | 'down' | 'left' | 'right') {
