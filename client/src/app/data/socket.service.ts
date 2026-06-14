@@ -18,6 +18,7 @@ export class SocketService {
     gameInitialDataChange$ = new Subject<any>();
     gameIdChange$ = new Subject<string>();
     disconnected$ = new Subject<any>();
+    gameEnded$ = new Subject<void>();
 
     connect(playerName: string, userId: string, gameId?: string) {
         this.socket = io(environment.API_URL, {
@@ -29,7 +30,6 @@ export class SocketService {
             path: environment.API_PATH,
         });
         socket = this.socket;
-        console.log(this.socket);
 
         this.socket.on('connect', () => {
             console.log('Connected to Socket.IO server', this.socket.id);
@@ -43,7 +43,6 @@ export class SocketService {
 
         this.socket.on('USERS_IN_LOBBY_CHANGE', (res) => {
             this.playersInLobbyChange$.next(res.users);
-            this.gameIdChange$.next(res.gameId);
         });
 
         this.socket.on('GAME_ID_ASSIGNED', ({ gameId }) => {
@@ -52,6 +51,10 @@ export class SocketService {
 
         this.socket.on('GAME_STARTED', (snapshot) => {
             this.gameInitialDataChange$.next(snapshot);
+        });
+
+        this.socket.on('GAME_ENDED', () => {
+            this.gameEnded$.next();
         });
     }
 
@@ -67,7 +70,11 @@ export class SocketService {
         this.socket.emit('JOIN_GAME', { gameId });
     }
 
-    emitGameStop() {
-        this.socket?.emit('GAME_STOPPED');
+    emitLeaveGame(gameId: string) {
+        this.socket.emit('LEAVE_GAME', { gameId });
+    }
+
+    emitEndGame(gameId: string) {
+        this.socket.emit('END_GAME', { gameId });
     }
 }

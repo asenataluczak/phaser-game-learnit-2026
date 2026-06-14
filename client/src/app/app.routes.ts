@@ -1,7 +1,16 @@
-import { Routes } from '@angular/router';
+import { CanDeactivateFn, Routes } from '@angular/router';
 import { MainMenu } from './main-menu/main-menu.component';
 import { Lobby } from './lobby/lobby.component';
 import { PhaserGame } from './phaser-game.component';
+import { inject } from '@angular/core';
+import { LobbyStore } from './data/lobby.store';
+
+export const gameInProgressGuard: CanDeactivateFn<unknown> = () => {
+    const lobbyStore = inject(LobbyStore);
+    const data = lobbyStore.initialGameData?.();
+    if (!lobbyStore.initialGameData()?.gameInProgress) return true;
+    return false;
+};
 
 export const routes: Routes = [
     {
@@ -15,5 +24,6 @@ export const routes: Routes = [
     {
         path: 'game/:id',
         component: PhaserGame,
+        canDeactivate: [gameInProgressGuard],
     },
 ];

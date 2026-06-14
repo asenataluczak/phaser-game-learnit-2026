@@ -37,12 +37,13 @@ const StartGame = (
     players: Array<Player>,
     currentUserIndex: number,
     initialGameData: any,
+    socket: any,
 ) => {
     const game = new Game({ ...config, parent });
-    console.log(players, currentUserIndex);
     game.registry.set('currentUserIndex', currentUserIndex);
     game.registry.set('players', players);
     game.registry.set('initialGameData', initialGameData);
+    game.registry.set('socket', socket);
     return game;
 };
 

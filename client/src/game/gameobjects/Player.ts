@@ -1,7 +1,7 @@
 import { GameObjects, Physics } from 'phaser';
 import * as Phaser from 'phaser';
 
-export class Player extends Physics.Arcade.Image {
+export class Player extends Physics.Arcade.Sprite {
     declare body: Physics.Arcade.Body;
 
     debugGfx: GameObjects.Graphics;
@@ -28,6 +28,7 @@ export class Player extends Physics.Arcade.Image {
         name: string,
     ) {
         super(scene, x, y, 'player');
+        this.scene = scene;
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);

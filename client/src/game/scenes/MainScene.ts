@@ -33,28 +33,13 @@ export class MainScene extends Scene {
 
     create() {
         this.add.image(0, 56, 'field').setOrigin(0, 0);
-        this.scene.pause();
+
+        if (!this.scene.isPaused()) {
+            this.scene.pause();
+        }
         this.physics.world.setBounds(0, 82, 1280, 612);
 
-        this.socket = socket;
-
-        this.socket.on('GAME_RESET', () => {
-            this.localPlayerSprite.setInteractive();
-            this.hudScene.scene.restart();
-            this.scene.resume();
-        });
-
-        this.socket.on('GOAL_RESET', () => {
-            this.localPlayerSprite.setInteractive();
-        });
-
-        this.socket.on('GAME_TIMEOUT_UPDATE', (remainingSeconds: number) => {
-            this.hudScene.updateRemainingTime(remainingSeconds);
-        });
-
-        this.socket.on('GAMEOVER', () => {
-            this.handleGameOver();
-        });
+        this.socket = this.game.registry.get('socket');
 
         this.initialGameData = this.game.registry.get('initialGameData');
         this.currentUserIndex = this.game.registry.get('currentUserIndex');
@@ -64,10 +49,8 @@ export class MainScene extends Scene {
             this.currentUserIndex,
         );
 
-        if (this.initialGameData.gameInProgress) {
-            this.scoreA = this.initialGameData.score.A;
-            this.scoreB = this.initialGameData.score.B;
-        }
+        this.scoreA = this.initialGameData.score.A;
+        this.scoreB = this.initialGameData.score.B;
 
         this.ball = new Ball(
             this,
@@ -91,22 +74,6 @@ export class MainScene extends Scene {
             this.allPlayerSprites.push(playerSprite);
         });
 
-        this.socket.on('SNAPSHOT_UPDATE', (snapshot: any) => {
-            this.snapshots.push({
-                ...unpack(snapshot),
-                recvClientTime: performance.now(),
-            });
-            if (this.snapshots.length > 30) this.snapshots.shift();
-        });
-
-        this.socket.on('SCORE_UPDATE', (score: any) => {
-            const scoreForTeam = score.A > this.scoreA ? 1 : 2;
-            this.scoreA = score.A;
-            this.scoreB = score.B;
-            this.localPlayerSprite.disableInteractive();
-            this.updateHudScore(scoreForTeam);
-        });
-
         const goalA = this.physics.add
             .staticImage(0, 301, 'goal')
             .setOrigin(0, 0)
@@ -117,16 +84,83 @@ export class MainScene extends Scene {
             .setOrigin(0, 0);
         goalB.refreshBody();
 
+        const gameResetListener = (data: any) => {
+            console.log('GAME RESET EVENT');
+            this.scoreA = data.score.A;
+            this.scoreB = data.score.B;
+            this.hudScene.resetScore(this.scoreA, this.scoreB);
+            this.initialGameData.gameTimeout = data.gameTimeout;
+            this.localPlayerSprite.setInteractive();
+            this.cameras.main.setAlpha(1);
+            this.scene.resume();
+        };
+        const gameTimeoutUpdateListener = (remainingSeconds: number) => {
+            this.hudScene.updateRemainingTime(remainingSeconds);
+        };
+        const gameoverListener = () => {
+            this.handleGameOver();
+        };
+        const scoreUpdateListener = (score: any) => {
+            const scoreForTeam = score.A > this.scoreA ? 1 : 2;
+            this.scoreA = score.A;
+            this.scoreB = score.B;
+            this.localPlayerSprite.disableInteractive();
+            this.updateHudScore(scoreForTeam);
+        };
+
+        const goalResetListener = () => {
+            this.localPlayerSprite.setInteractive();
+            this.hudScene.goalReset();
+            this.cameras.main.setAlpha(1);
+        };
+
+        const snapshotUpdateListener = (snapshot: any) => {
+            this.snapshots.push({
+                ...unpack(snapshot),
+                recvClientTime: performance.now(),
+            });
+            if (this.snapshots.length > 30) this.snapshots.shift();
+        };
+
+        this.scene
+            .get('HudScene')
+            .events.on(Phaser.Scenes.Events.CREATE, () => {
+                console.log('CREATED');
+                this.hudScene = this.scene.get('HudScene') as HudScene;
+                this.socket.on('GAME_RESET', gameResetListener);
+                this.socket.on(
+                    'GAME_TIMEOUT_UPDATE',
+                    gameTimeoutUpdateListener,
+                );
+                this.socket.on('GAMEOVER', gameoverListener);
+                this.socket.on('SCORE_UPDATE', scoreUpdateListener);
+                this.socket.on('GOAL_RESET', goalResetListener);
+                this.socket.on('SNAPSHOT_UPDATE', snapshotUpdateListener);
+
+                if (this.initialGameData.gameTimeout === 0) {
+                    console.log(this.initialGameData.gameTimeout);
+                    this.handleGameOver();
+                } else {
+                    this.cameras.main.fadeIn(1000, 23, 23, 23);
+                }
+                this.scene.resume();
+            });
+
         this.scene.launch('HudScene', {
             scoreA: this.scoreA,
             scoreB: this.scoreB,
             gameTimeout: this.initialGameData.gameTimeout,
         });
-        this.hudScene = this.scene.get('HudScene') as HudScene;
-        if (this.initialGameData.gameTimeout === 0) {
-            this.handleGameOver();
-        }
-        this.scene.resume();
+
+        this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+            console.log('DESTROY');
+            this.socket.off('GAME_RESET', gameResetListener);
+            this.socket.off('GAME_TIMEOUT_UPDATE', gameTimeoutUpdateListener);
+            this.socket.off('GAMEOVER', gameoverListener);
+            this.socket.off('SCORE_UPDATE', scoreUpdateListener);
+            this.socket.off('GOAL_RESET', goalResetListener);
+            this.socket.off('SNAPSHOT_UPDATE', snapshotUpdateListener);
+        });
     }
 
     accumMs = 0;
@@ -207,18 +241,17 @@ export class MainScene extends Scene {
                     Phaser.Math.Linear(ax, bx, t),
                     Phaser.Math.Linear(ay, by, t),
                 );
+            } else {
+                this.allPlayerSprites[i].updatePosition(
+                    Phaser.Math.Linear(ax, bx, t),
+                    Phaser.Math.Linear(ay, by, t),
+                );
             }
-
-            this.allPlayerSprites[i].updatePosition(
-                Phaser.Math.Linear(ax, bx, t),
-                Phaser.Math.Linear(ay, by, t),
-            );
         });
     }
 
     private handleGameOver() {
-        this.game.events.removeListener('start-game');
-
+        this.cameras.main.setAlpha(0.1);
         this.hudScene.showGameOverScreen(
             this.scoreA,
             this.scoreB,
@@ -227,17 +260,15 @@ export class MainScene extends Scene {
                 this.socket.emit('RESTART_GAME', {});
             },
         );
-        this.scene.pause();
+        if (!this.scene.isPaused()) {
+            this.scene.pause();
+        }
     }
 
     private updateHudScore(team?: 1 | 2) {
-        this.hudScene.updateScore(this.scoreA, this.scoreB);
-
         if (!team) return;
-        if (this.localPlayerSprite.team === team) {
-            this.cameras.main.fadeIn(4000, 8, 80, 0);
-        } else {
-            this.cameras.main.fadeIn(4000, 80, 8, 0);
-        }
+        this.hudScene.updateScore(this.scoreA, this.scoreB, team);
+        this.cameras.main.shake(150, 0.01);
+        this.cameras.main.setAlpha(0.5);
     }
 }
