@@ -1,5 +1,5 @@
 # PlayIT
-~Multiplayer web game build with Phaser~
+~ Multiplayer web game build with Phaser ~
 
 https://ankara-messi.asenata.dev/
 
