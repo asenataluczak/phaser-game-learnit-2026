@@ -43,6 +43,7 @@ export class SocketService {
 
         this.socket.on('USERS_IN_LOBBY_CHANGE', (res) => {
             this.playersInLobbyChange$.next(res.users);
+            this.gameIdChange$.next(res.gameId);
         });
 
         this.socket.on('GAME_ID_ASSIGNED', ({ gameId }) => {
