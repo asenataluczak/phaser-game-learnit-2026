@@ -18,7 +18,7 @@ export class Ball extends Physics.Arcade.Image {
         this.setBounce(0.8, 0.8);
         this.setMass(0.5);
         this.setDamping(true);
-        this.setDrag(0.7);
+        this.setDrag(0.5);
         this.refreshBody();
     }
 

@@ -36,10 +36,10 @@ const createBall = (lobby, goalCallback) => {
   ball.setBounce(0.8, 0.8);
   ball.setMass(0.5);
   ball.setDamping(true);
-  ball.setDrag(0.7);
+  ball.setDrag(0.5);
 
-  const goalB = lobby.physics.add.body(1, 310, 82, 156);
-  const goalA = lobby.physics.add.body(1198, 310, 82, 156);
+  const goalB = lobby.physics.add.body(1, 310, 77, 156);
+  const goalA = lobby.physics.add.body(1203, 310, 77, 156);
 
   lobby.physics.add.overlap(ball, goalA, () => goalCallback("A"));
   lobby.physics.add.overlap(ball, goalB, () => goalCallback("B"));
@@ -69,10 +69,10 @@ const createPlayerSprite = (x, y, physics, ballSprite, corners) => {
   const body = physics.add.body(x, y, size, size);
   body.setCollideWorldBounds();
   body.setCircle(size / 2);
-  body.setMass(1);
-  body.setBounce(0.6);
+  body.setMass(1.2);
+  body.setBounce(0.8);
   body.setDamping(true);
-  body.setDrag(0.3);
+  body.setDrag(0.2);
   body.pushable = true;
 
   physics.add.collider(ballSprite, body);

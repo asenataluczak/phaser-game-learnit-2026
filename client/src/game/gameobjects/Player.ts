@@ -59,11 +59,11 @@ export class Player extends Physics.Arcade.Sprite {
         this.setDisplaySize(size, size);
         this.setOrigin(0, 0);
         this.body.setCircle(size / 2 / this.scaleX);
-        this.setMass(1);
-        this.setBounce(0.6);
+        this.setMass(1.2);
+        this.setBounce(0.3);
         this.setInteractive();
         this.setDamping(true);
-        this.setDrag(0.3);
+        this.setDrag(0.2);
         this.body.pushable = true;
         this.refreshBody();
 
@@ -161,10 +161,10 @@ export class Player extends Physics.Arcade.Sprite {
         if (!this.distance) {
             return;
         }
-        const k = 2;
+        const k = 3;
         let speed = this.distance * k;
 
-        speed = Phaser.Math.Clamp(speed, 100, 600);
+        speed = Phaser.Math.Clamp(speed, 50, 900);
 
         const rawVelocity = new Phaser.Math.Vector2(
             this.dx,
