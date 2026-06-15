@@ -1,4 +1,7 @@
-# Phase game LearnIT 2026
+# PlayIT
+~Multiplayer web game build with Phaser~
+
+https://ankara-messi.asenata.dev/
 
 ## Server
 
