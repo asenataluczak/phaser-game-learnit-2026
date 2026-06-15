@@ -49,9 +49,9 @@ export class Player extends Physics.Arcade.Sprite {
         this.isHost = isHost;
         this.isCurrentUser = isCurrentUser;
 
-        this.team === 2 ? 
-            this.setTexture('player_blue') : 
-            this.setTexture('player');
+        this.team === 2
+            ? this.setTexture('player_blue')
+            : this.setTexture('player');
 
         this.setCollideWorldBounds();
 
@@ -74,13 +74,13 @@ export class Player extends Physics.Arcade.Sprite {
 
     private drawPlayerBorder() {
         if (!this.isCurrentUser) return;
-        
-        this.playerBorderGfx.lineStyle(3, 0xffffff, 1); 
+
+        this.playerBorderGfx.lineStyle(3, 0xffffff, 1);
 
         this.playerBorderGfx.strokeCircle(
-            this.body.center.x, 
-            this.body.center.y, 
-            this.body.width / 2
+            this.body.center.x,
+            this.body.center.y,
+            this.body.width / 2,
         );
     }
 
@@ -107,23 +107,49 @@ export class Player extends Physics.Arcade.Sprite {
         const borderX = px + vectorToBorder.x;
         const borderY = py + vectorToBorder.y;
 
+        this.debugGfx.clear();
         this.distance = Phaser.Math.Distance.Between(mx, my, px, py);
         if (this.body.hitTest(targetX, targetY)) {
             this.distance = 0;
+            return;
         }
 
-        this.debugGfx.clear();
-
         this.drawPlayerBorder();
-        this.debugGfx.fillStyle(0xff0000, 1);
-        this.debugGfx.fillCircle(mx, my, 5);
-        this.debugGfx.fillCircle(borderX, borderY, 5);
-        this.debugGfx.fillStyle(0xffff00, 1);
-        this.debugGfx.fillCircle(px, py, 5);
-        this.debugGfx.fillStyle(0xff0f00, 1);
-        this.debugGfx.fillCircle(targetX, targetY, 5);
-        this.debugGfx.lineStyle(2, 0x0000ff, 1);
-        this.debugGfx.lineBetween(borderX, borderY, targetX, targetY);
+        this.drawArrow(borderX, borderY, targetX, targetY);
+    }
+
+    private drawArrow(
+        borderX: number,
+        borderY: number,
+        targetX: number,
+        targetY: number,
+    ) {
+        const headLength = 15;
+        const headWidth = 22;
+        const arrowOffset = 15;
+        const color = this.team === 1 ? 0xff0000 : 0x0000ff;
+
+        this.debugGfx
+            .lineStyle(16, 0xffffff, 1)
+            .lineBetween(borderX, borderY, targetX, targetY);
+        this.debugGfx
+            .lineStyle(12, color, 1)
+            .lineBetween(borderX, borderY, targetX, targetY);
+
+        const a = Phaser.Math.Angle.Between(borderX, borderY, targetX, targetY),
+            hx = targetX + Math.cos(a) * arrowOffset,
+            hy = targetY + Math.sin(a) * arrowOffset,
+            bx = hx - Math.cos(a) * headLength,
+            by = hy - Math.sin(a) * headLength,
+            ox = Math.cos(a + Math.PI / 2) * (headWidth / 2),
+            oy = Math.sin(a + Math.PI / 2) * (headWidth / 2);
+
+        this.debugGfx
+            .fillStyle(color, 1)
+            .fillTriangle(hx, hy, bx + ox, by + oy, bx - ox, by - oy);
+        this.debugGfx
+            .lineStyle(2, 0xffffff, 1)
+            .strokeTriangle(hx, hy, bx + ox, by + oy, bx - ox, by - oy);
     }
 
     kick() {
