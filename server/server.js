@@ -224,8 +224,6 @@ io.on("connection", (socket) => {
     lobby.gameInProgress = true;
     lobby.physics = createPhysics();
     const usersInTheRoom = lobby.players;
-    const playersTeamA = usersInTheRoom.filter((u) => u.team === 1);
-    const playersTeamB = usersInTheRoom.filter((u) => u.team === 2);
 
     lobby.ballSprite = createBall(lobby, (team) => {
       if (!lobby.canScoreIncrease) return;
@@ -237,33 +235,18 @@ io.on("connection", (socket) => {
       lobby.canScoreIncrease = false;
     });
     const playerSpriteList = [];
-    playersTeamA.forEach((p, i) => {
+    usersInTheRoom.forEach((p, i) => {
       const sprite = createPlayerSprite(
-        // ...Object.values(INITIAL_POSITIONS_TEAM_A[i]),
         ...Object.values(
-          INITIAL_POSITIONS_TEAM_A[
-            Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_A.length)
-          ],
+          i % 2 === 0
+            ? INITIAL_POSITIONS_TEAM_A[i]
+            : INITIAL_POSITIONS_TEAM_B[i],
         ),
-        lobby.physics,
-        lobby.ballSprite,
-        lobby.corners,
-      );
-      if (playerSpriteList.length) {
-        playerSpriteList.forEach((p, i) => {
-          lobby.physics.add.collider(sprite, playerSpriteList[i]);
-        });
-      }
-      playerSpriteList.push(sprite);
-    });
-    playersTeamB.forEach((p, i) => {
-      const sprite = createPlayerSprite(
-        // ...Object.values(INITIAL_POSITIONS_TEAM_B[i]),
-        ...Object.values(
-          INITIAL_POSITIONS_TEAM_B[
-            Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_B.length)
-          ],
-        ),
+        // ...Object.values(
+        //   INITIAL_POSITIONS_TEAM_A[
+        //     Math.floor(Math.random() * INITIAL_POSITIONS_TEAM_A.length)
+        //   ],
+        // ),
         lobby.physics,
         lobby.ballSprite,
         lobby.corners,
@@ -326,12 +309,10 @@ const setListenersForGame = (socket, lobby, gameId) => {
     lobby.gameTimeout = GAME_TIMEOUT_S;
     resetPositions(lobby);
     setIntervalsForLobby(lobby, gameId);
-    io.sockets
-      .to(gameId)
-      .emit("GAME_RESET", {
-        score: lobby.score,
-        gameTimeout: lobby.gameTimeout,
-      });
+    io.sockets.to(gameId).emit("GAME_RESET", {
+      score: lobby.score,
+      gameTimeout: lobby.gameTimeout,
+    });
   });
 
   socket.on("END_GAME", () => {

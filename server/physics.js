@@ -58,7 +58,7 @@ const createBall = (lobby, goalCallback) => {
     lobby.corners.push(corner);
   });
   lobby.corners.forEach((corner) => {
-    lobby.physics.add.collider(ball, corner);
+    lobby.physics.add.collider(corner, ball);
   });
 
   return ball;
@@ -78,7 +78,7 @@ const createPlayerSprite = (x, y, physics, ballSprite, corners) => {
   physics.add.collider(ballSprite, body);
   physics.add.collider(body, ballSprite);
   corners.forEach((corner) => {
-    physics.add.collider(body, corner);
+    physics.add.collider(corner, body);
   });
 
   return body;
