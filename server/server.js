@@ -242,8 +242,8 @@ io.on("connection", (socket) => {
       const sprite = createPlayerSprite(
         ...Object.values(
           i % 2 === 0
-            ? INITIAL_POSITIONS_TEAM_A[i]
-            : INITIAL_POSITIONS_TEAM_B[i],
+            ? INITIAL_POSITIONS_TEAM_A[i % INITIAL_POSITIONS_TEAM_A.length]
+            : INITIAL_POSITIONS_TEAM_B[i % INITIAL_POSITIONS_TEAM_B.length],
         ),
         // ...Object.values(
         //   INITIAL_POSITIONS_TEAM_A[
