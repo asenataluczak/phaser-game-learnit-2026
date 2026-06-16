@@ -235,6 +235,9 @@ io.on("connection", (socket) => {
       lobby.canScoreIncrease = false;
     });
     const playerSpriteList = [];
+    console.log(usersInTheRoom);
+    console.log(INITIAL_POSITIONS_TEAM_A);
+    console.log(INITIAL_POSITIONS_TEAM_B);
     usersInTheRoom.forEach((p, i) => {
       const sprite = createPlayerSprite(
         ...Object.values(
