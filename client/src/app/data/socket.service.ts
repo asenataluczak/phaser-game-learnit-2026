@@ -19,6 +19,7 @@ export class SocketService {
     gameIdChange$ = new Subject<string>();
     disconnected$ = new Subject<any>();
     gameEnded$ = new Subject<void>();
+    playerReadyStatusChanged$ = new Subject<any>();
 
     connect(playerName: string, userId: string, gameId?: string) {
         this.socket = io(environment.API_URL, {
@@ -57,6 +58,10 @@ export class SocketService {
         this.socket.on('GAME_ENDED', () => {
             this.gameEnded$.next();
         });
+
+        this.socket.on('PLAYER_READY_STATUS_CHANGED', ({ playerId , state }) => {
+            this.playerReadyStatusChanged$.next({ playerId, state });
+        })
     }
 
     emitStartGame(gameId: string) {
@@ -77,5 +82,9 @@ export class SocketService {
 
     emitEndGame(gameId: string) {
         this.socket.emit('END_GAME', { gameId });
+    }
+
+    emitReadyStatusChange(gameId: string, playerId : string, state : boolean) {
+        this.socket.emit('PLAYER_READY_STATUS_CHANGE', { gameId , playerId , state});
     }
 }

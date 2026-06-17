@@ -30,10 +30,19 @@
             <ol class="mt-4">
                 @for (player of playersA(); track player.name) {
                     <li
-                        class="border-2 shadow-red-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-red-500"
+                        class="border-2 shadow-red-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-red-500 flex place-content-around items-center"
                         [class.bg-lit]="player.id === lobbyStore.player()?.id"
                     >
+                        <img src="assets/hud/status_checkmark.png" class="h-5 invisible"> 
+                        <!-- dummy element ktory sluzy tylko do ulozenia elementow we flexie -->
+
                         {{ player.host ? "👑" : "" }} {{ player.name }}
+
+                        @if (player.ready) {
+                            <img src="assets/hud/status_checkmark.png" class="h-5">
+                        } @else {
+                            <img src="assets/hud/status_hourglass.png" class="h-5">
+                        }
                     </li>
                 }
             </ol>
@@ -46,51 +55,89 @@
             <ol class="mt-4">
                 @for (player of playersB(); track player.name) {
                     <li
-                        class="border-2 bg-lit shadow-blue-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-blue-500"
+                        class="border-2 bg-lit shadow-blue-600 shadow-md m-4 py-1 text-lg tracking-wider rounded-md border-blue-500 flex place-content-around items-center"
                         [class.bg-lit]="player.id === lobbyStore.player()?.id"
                     >
+                        <img src="assets/hud/status_checkmark.png" class="h-5 invisible"> 
+                        <!-- dummy element ktory sluzy tylko do ulozenia elementow we flexie -->
+                    
                         {{ player.host ? "👑" : "" }} {{ player.name }}
+
+                        @if (player.ready) {
+                            <img src="assets/hud/status_checkmark.png" class="h-5">
+                        } @else {
+                            <img src="assets/hud/status_hourglass.png" class="h-5">
+                        }
                     </li>
                 }
             </ol>
         </div>
     </div>
 
-    <div class="flex items-end justify-between sm:mx-14 mt-8 mb-4 mr-2">
-        <button
-            class="btn btn-sm btn-secondary rounded-lg flex items-center"
-            type="button"
-            (click)="lobbyStore.leaveGame()"
-        >
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-6 mr-2"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
-                />
-            </svg>
-
-            Leave
-        </button>
-        @if (lobbyStore.player()?.host) {
+    <div class="flex flex-col">
+        <div class="flex items-end justify-between sm:mx-14 mt-8 mb-2 mr-2">
             <button
-                class="btn btn-primary flex ml-4"
+                class="btn btn-sm btn-secondary rounded-lg flex items-center"
                 type="button"
-                (click)="startGame()"
+                (click)="lobbyStore.leaveGame()"
             >
-                start game
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="size-6 mr-2"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9"
+                    />
+                </svg>
+
+                Leave
             </button>
-        } @else {
-            <p class="italic text-right mt-8 text-gray-400">
-                Waiting for host to start the game...
-            </p>
+            <div class="flex items-end">
+                @if (lobbyStore.player()?.ready) {
+                    <button
+                        class="btn btn-primary !bg-[rgb(41,156,41)] !border-0 !flex !items-center !px-5"
+                        (click)="setPlayerReady(false)"
+                    >
+                    ready
+                    <img src="assets/hud/ready_checkmark.png" class="h-7 ml-1">
+                    </button>
+                } @else {
+                    <button
+                        class="btn btn-primary !bg-[rgb(126,41,41)] !border-0 !flex !items-center !px-5"
+                        (click)="setPlayerReady(true)"
+                    >
+                    ready
+                    <img src="assets/hud/ready_cross.png" class="h-7 ml-1">
+                    </button>
+                }
+                
+                
+                @if (lobbyStore.player()?.host) {
+                    <button
+                        class="btn btn-primary flex ml-4 disabled:opacity-40"
+                        type="button"
+                        (click)="startGame()"
+                        [disabled]="!isEveryoneReady()"
+                    >
+                        start game
+                    </button>
+                }
+            </div>
+        </div>
+        @if (isEveryoneReady()) {
+                <p class="italic text-gray-400 text-right mt-2 mr-2">
+                    Waiting for host to start the game...
+                </p>
+            } @else {
+                <p class="italic text-gray-400 text-right mt-2 mr-2">
+                    Waiting for all players to get ready... {{ playersReadyCount() }}
+                </p>
         }
     </div>
 </div>

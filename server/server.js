@@ -302,6 +302,16 @@ io.on("connection", (socket) => {
 
     disconnectTimers.set(userId, timer);
   });
+
+  socket.on("PLAYER_READY_STATUS_CHANGE", ({ gameId , playerId , state}) => {
+    lobbies.get(gameId).players.find(player => player.id === playerId).ready = state;
+    const players = lobbies.get(gameId).players;
+    players.forEach(player => {
+      const playerSocketId = userSockets.get(player.id).socketId;
+      const playerSocket = io.sockets.sockets.get(playerSocketId);
+      playerSocket.emit("PLAYER_READY_STATUS_CHANGED", { playerId, state });
+    })
+  });
 });
 
 const setListenersForGame = (socket, lobby, gameId) => {
