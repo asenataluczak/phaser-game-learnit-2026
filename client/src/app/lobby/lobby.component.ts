@@ -34,6 +34,14 @@ export class Lobby {
         }
     });
 
+    playersReadyCount = signal('(0/0)');
+
+    playersReadyCountEffect = effect(() => {
+        const playersReady = this.lobbyStore.playersInLobby().filter(player => player.ready).length;
+        const playersTotalCount = this.lobbyStore.playersInLobby().length
+        this.playersReadyCount.set(`(${playersReady}/${playersTotalCount})`);
+    });
+
     isEveryoneReady = signal(false);
 
     allReadyEffect = effect(() => {
