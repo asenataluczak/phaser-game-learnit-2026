@@ -10,4 +10,5 @@ export interface Player extends User {
         x: number;
         y: number;
     };
+    ready: boolean;
 }

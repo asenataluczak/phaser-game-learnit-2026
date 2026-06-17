@@ -174,6 +174,16 @@ export const LobbyStore = signalStore(
                         gameId: null,
                     });
                 });
+                
+                socket.playerReadyStatusChanged$.subscribe(({ playerId , state }) => {
+                    patchState(store, {
+                        playersInLobby: store.playersInLobby().map(playerTarget =>
+                                            playerTarget.id === playerId
+                                            ? { ...playerTarget, ready: state }
+                                            : playerTarget
+                                        )
+                    });
+                });
 
                 router.events
                     .pipe(filter((event) => event instanceof ActivationEnd))
